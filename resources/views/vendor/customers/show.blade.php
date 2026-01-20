@@ -35,14 +35,20 @@
                                 <div class="text-start">
                                     <div class="mb-3">
                                         <label class="text-muted small">Phone</label>
-                                        <div class="fw-medium">{{ $customer->phone ?? 'Not provided' }}</div>
+                                        <div class="fw-medium">{{ $customer->mobile_number ?? $customer->phone ?? 'Not provided' }}</div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">Address</label>
                                         <div class="fw-medium">{{ $customer->address ?? 'Not provided' }}</div>
                                     </div>
+                                    @if(isset($customerSince))
                                     <div class="mb-3">
-                                        <label class="text-muted small">Registered On</label>
+                                        <label class="text-muted small">Customer Since</label>
+                                        <div class="fw-medium">{{ $customerSince->format('M d, Y') }}</div>
+                                    </div>
+                                    @endif
+                                    <div class="mb-3">
+                                        <label class="text-muted small">Account Created</label>
                                         <div class="fw-medium">{{ $customer->created_at->format('M d, Y h:i A') }}</div>
                                     </div>
                                 </div>

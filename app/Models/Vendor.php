@@ -268,4 +268,30 @@ class Vendor extends Model
     {
         return $this->products()->count();
     }
+
+    /**
+     * Get all customers of this vendor (users who have sent invoices).
+     */
+    public function customers()
+    {
+        return $this->belongsToMany(User::class, 'vendor_customers', 'vendor_id', 'user_id')
+            ->withTimestamps()
+            ->withPivot('first_invoice_id');
+    }
+
+    /**
+     * Get the vendor_customers pivot records.
+     */
+    public function vendorCustomers()
+    {
+        return $this->hasMany(VendorCustomer::class);
+    }
+
+    /**
+     * Get total customers count.
+     */
+    public function getTotalCustomersAttribute()
+    {
+        return $this->customers()->count();
+    }
 }

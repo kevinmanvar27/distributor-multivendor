@@ -185,6 +185,7 @@ class WithoutGstInvoiceController extends Controller
     
     /**
      * Remove an item from the without GST invoice.
+     * When an item is removed, the entire invoice is deleted.
      */
     public function removeItem(Request $request, $id)
     {
@@ -192,42 +193,14 @@ class WithoutGstInvoiceController extends Controller
         
         $invoice = WithoutGstInvoice::where('vendor_id', $vendor->id)->findOrFail($id);
         
-        $invoiceData = $invoice->invoice_data;
+        // Store invoice number for success message
+        $invoiceNumber = $invoice->invoice_number;
         
-        if (is_string($invoiceData)) {
-            $invoiceData = json_decode($invoiceData, true);
-            if (is_string($invoiceData)) {
-                $invoiceData = json_decode($invoiceData, true);
-            }
-        }
+        // Delete the entire invoice when removing an item
+        $invoice->delete();
         
-        if (!is_array($invoiceData)) {
-            $invoiceData = [];
-        }
-        
-        $itemIndex = $request->input('item_index');
-        
-        if (!isset($invoiceData['cart_items'][$itemIndex])) {
-            return redirect()->back()->with('error', 'Invalid item selection.');
-        }
-        
-        // Remove the item
-        array_splice($invoiceData['cart_items'], $itemIndex, 1);
-        
-        // Recalculate totals
-        $subtotal = 0;
-        foreach ($invoiceData['cart_items'] as $item) {
-            $subtotal += (float) ($item['total'] ?? 0);
-        }
-        
-        $invoiceData['subtotal'] = $subtotal;
-        $invoiceData['total'] = $subtotal + ($invoiceData['shipping'] ?? 0) - ($invoiceData['discount_amount'] ?? 0);
-        
-        $invoice->total_amount = $invoiceData['total'];
-        $invoice->invoice_data = $invoiceData;
-        $invoice->save();
-        
-        return redirect()->back()->with('success', 'Item removed from invoice successfully.');
+        return redirect()->route('vendor.invoices-black.index')
+            ->with('success', "Invoice #{$invoiceNumber} has been deleted.");
     }
     
     /**

@@ -685,6 +685,11 @@ class ShoppingCartController extends Controller
                     'invoice' => $proformaInvoice,
                     'vendor_id' => $vendorId
                 ];
+                
+                // Add the user as a customer of this vendor (if authenticated)
+                if (Auth::check()) {
+                    \App\Models\VendorCustomer::addCustomerToVendor($vendorId, Auth::id(), $proformaInvoice->id);
+                }
             }
         }
         

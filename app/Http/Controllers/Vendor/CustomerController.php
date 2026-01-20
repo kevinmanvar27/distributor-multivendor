@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\ProformaInvoice;
+use App\Models\VendorCustomer;
 use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
@@ -20,13 +21,16 @@ class CustomerController extends Controller
 
     /**
      * Display a listing of customers for the vendor.
+     * Shows customers who have sent invoices to this vendor.
      */
     public function index(Request $request)
     {
         $vendor = $this->getVendor();
         
-        $query = User::where('user_role', 'user')
-            ->where('vendor_id', $vendor->id);
+        // Get customers from vendor_customers table (users who have sent invoices)
+        $query = User::whereHas('customerOfVendors', function($q) use ($vendor) {
+            $q->where('vendors.id', $vendor->id);
+        })->where('user_role', 'user');
         
         // Search functionality
         if ($request->filled('search')) {
@@ -34,23 +38,23 @@ class CustomerController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                  ->orWhere('mobile_number', 'like', "%{$search}%");
             });
         }
         
         $customers = $query->withCount(['proformaInvoices as orders_count' => function($q) use ($vendor) {
             $q->where('vendor_id', $vendor->id);
         }])
+        ->with(['customerOfVendors' => function($q) use ($vendor) {
+            $q->where('vendors.id', $vendor->id);
+        }])
         ->orderBy('created_at', 'desc')
         ->paginate(20);
         
         // Calculate statistics
-        $totalCustomers = User::where('user_role', 'user')
-            ->where('vendor_id', $vendor->id)
-            ->count();
+        $totalCustomers = VendorCustomer::where('vendor_id', $vendor->id)->count();
             
-        $newCustomersThisMonth = User::where('user_role', 'user')
-            ->where('vendor_id', $vendor->id)
+        $newCustomersThisMonth = VendorCustomer::where('vendor_id', $vendor->id)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
@@ -69,9 +73,12 @@ class CustomerController extends Controller
     {
         $vendor = $this->getVendor();
         
+        // Check if user is a customer of this vendor (has sent invoices)
         $customer = User::where('id', $id)
             ->where('user_role', 'user')
-            ->where('vendor_id', $vendor->id)
+            ->whereHas('customerOfVendors', function($q) use ($vendor) {
+                $q->where('vendors.id', $vendor->id);
+            })
             ->firstOrFail();
         
         // Get customer's orders from this vendor
@@ -89,11 +96,18 @@ class CustomerController extends Controller
             ->where('vendor_id', $vendor->id)
             ->sum('total_amount');
         
+        // Get when this customer first ordered from this vendor
+        $vendorCustomer = VendorCustomer::where('vendor_id', $vendor->id)
+            ->where('user_id', $customer->id)
+            ->first();
+        $customerSince = $vendorCustomer ? $vendorCustomer->created_at : null;
+        
         return view('vendor.customers.show', compact(
             'customer',
             'orders',
             'totalOrders',
-            'totalSpent'
+            'totalSpent',
+            'customerSince'
         ));
     }
 }

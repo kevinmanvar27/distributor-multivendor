@@ -101,6 +101,11 @@
         .status-delivery { background: #ffc107; color: #333; }
         .status-delivered { background: #28a745; color: white; }
         .status-return { background: #dc3545; color: white; }
+        .print-time {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #999;
+        }
         
         @media print {
             body { padding: 0; }
@@ -116,16 +121,29 @@
 
     <div class="invoice-header">
         <div class="company-info">
-            <h1>{{ $vendor->business_name ?? $vendor->name ?? 'Vendor' }}</h1>
-            <p>{{ $vendor->address ?? '' }}</p>
-            <p>{{ $vendor->phone ?? '' }}</p>
-            <p>{{ $vendor->email ?? '' }}</p>
+            <h1>{{ $vendor->store_name ?? 'Vendor Store' }}</h1>
+            @if($vendor->business_address)
+                <p>{{ $vendor->business_address }}</p>
+            @endif
+            @if($vendor->city || $vendor->state || $vendor->postal_code)
+                <p>{{ implode(', ', array_filter([$vendor->city, $vendor->state, $vendor->postal_code])) }}</p>
+            @endif
+            @if($vendor->business_phone)
+                <p>Phone: {{ $vendor->business_phone }}</p>
+            @endif
+            @if($vendor->business_email)
+                <p>Email: {{ $vendor->business_email }}</p>
+            @endif
+            @if($vendor->gst_number)
+                <p>GST: {{ $vendor->gst_number }}</p>
+            @endif
         </div>
         <div class="invoice-info">
             <h2>INVOICE</h2>
             <p><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</p>
             <p><strong>Date:</strong> {{ \Carbon\Carbon::parse($invoiceDate)->format('d M Y') }}</p>
-            <p>
+            <p><strong>Time:</strong> {{ $invoice->created_at->format('h:i A') }}</p>
+            <p style="margin-top: 10px;">
                 <span class="status-badge status-{{ strtolower(str_replace(' ', '-', $invoice->status)) }}">
                     {{ $invoice->status }}
                 </span>
@@ -138,13 +156,28 @@
         <h3>Bill To:</h3>
         @if($customer)
             <p><strong>{{ $customer['name'] ?? 'N/A' }}</strong></p>
-            <p>{{ $customer['email'] ?? '' }}</p>
-            <p>{{ $customer['phone'] ?? '' }}</p>
-            <p>{{ $customer['address'] ?? '' }}</p>
+            @if(!empty($customer['email']))
+                <p>Email: {{ $customer['email'] }}</p>
+            @endif
+            @if(!empty($customer['mobile_number']))
+                <p>Phone: {{ $customer['mobile_number'] }}</p>
+            @elseif(!empty($customer['phone']))
+                <p>Phone: {{ $customer['phone'] }}</p>
+            @endif
+            @if(!empty($customer['address']))
+                <p>Address: {{ $customer['address'] }}</p>
+            @endif
         @elseif($invoice->user)
             <p><strong>{{ $invoice->user->name }}</strong></p>
-            <p>{{ $invoice->user->email }}</p>
-            <p>{{ $invoice->user->phone ?? '' }}</p>
+            @if($invoice->user->email)
+                <p>Email: {{ $invoice->user->email }}</p>
+            @endif
+            @if($invoice->user->mobile_number)
+                <p>Phone: {{ $invoice->user->mobile_number }}</p>
+            @endif
+            @if($invoice->user->address)
+                <p>Address: {{ $invoice->user->address }}</p>
+            @endif
         @endif
     </div>
     @endif
@@ -163,7 +196,12 @@
             @forelse($cartItems as $index => $item)
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $item['product_name'] ?? 'Product' }}</td>
+                <td>
+                    {{ $item['product_name'] ?? 'Product' }}
+                    @if(!empty($item['variation_display_name']))
+                        <br><small style="color: #666;">{{ $item['variation_display_name'] }}</small>
+                    @endif
+                </td>
                 <td class="text-right">₹{{ number_format($item['price'] ?? 0, 2) }}</td>
                 <td class="text-center">{{ $item['quantity'] ?? 1 }}</td>
                 <td class="text-right">₹{{ number_format($item['total'] ?? 0, 2) }}</td>
@@ -181,18 +219,18 @@
             </tr>
             <tr>
                 <td colspan="4" class="text-right">Paid Amount:</td>
-                <td class="text-right" style="color: green;">₹{{ number_format($invoice->paid_amount, 2) }}</td>
+                <td class="text-right" style="color: green;">₹{{ number_format($invoice->paid_amount ?? 0, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="4" class="text-right">Pending Amount:</td>
-                <td class="text-right" style="color: red;">₹{{ number_format($invoice->pending_amount, 2) }}</td>
+                <td class="text-right" style="color: red;">₹{{ number_format($invoice->pending_amount ?? 0, 2) }}</td>
             </tr>
         </tfoot>
     </table>
 
     <div class="footer">
         <p>Thank you for your business!</p>
-        <p>Generated on {{ now()->format('d M Y, h:i A') }}</p>
+        <p class="print-time">Printed on {{ now()->format('d M Y, h:i:s A') }}</p>
     </div>
 </body>
 </html>

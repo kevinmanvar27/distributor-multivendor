@@ -478,56 +478,76 @@ class CartController extends ApiController
         $user = $request->user();
         
         $cartItems = ShoppingCartItem::where('user_id', $user->id)
-            ->with(['product.mainPhoto', 'variation'])
+            ->with(['product.mainPhoto', 'product.vendor', 'variation'])
             ->get();
 
         if ($cartItems->isEmpty()) {
             return $this->sendError('Cart is empty.', [], 400);
         }
 
-        $total = $cartItems->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
-
         $invoiceDate = now()->format('Y-m-d');
+        
+        // Group cart items by vendor to create separate invoices per vendor
+        $itemsByVendor = $cartItems->groupBy(function ($item) {
+            return $item->product->vendor_id ?? 0; // 0 for non-vendor products
+        });
+        
+        $createdInvoices = [];
+        
+        foreach ($itemsByVendor as $vendorId => $vendorItems) {
+            // Calculate total for this vendor's items
+            $vendorTotal = $vendorItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
 
-        // Prepare invoice data
-        $invoiceData = [
-            'cart_items' => $cartItems->map(function ($item) {
-                $itemData = [
-                    'id' => $item->id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'product_description' => $item->product->description,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->price * $item->quantity,
-                ];
-                
-                // Add variation details if this is a variable product
-                if ($item->product_variation_id && $item->variation) {
-                    $itemData['product_variation_id'] = $item->product_variation_id;
-                    $itemData['variation_display_name'] = $item->variation->display_name;
-                    $itemData['variation_attributes'] = $item->variation->formatted_attributes;
-                    $itemData['variation_sku'] = $item->variation->sku;
-                }
-                
-                return $itemData;
-            })->toArray(),
-            'total' => $total,
-            'invoice_date' => $invoiceDate,
-            'customer' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'address' => $user->address,
-                'mobile_number' => $user->mobile_number,
-            ],
-        ];
+            // Prepare invoice data for this vendor
+            $invoiceData = [
+                'cart_items' => $vendorItems->map(function ($item) {
+                    $itemData = [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'product_description' => $item->product->description,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'total' => $item->price * $item->quantity,
+                        'vendor_id' => $item->product->vendor_id,
+                    ];
+                    
+                    // Add variation details if this is a variable product
+                    if ($item->product_variation_id && $item->variation) {
+                        $itemData['product_variation_id'] = $item->product_variation_id;
+                        $itemData['variation_display_name'] = $item->variation->display_name;
+                        $itemData['variation_attributes'] = $item->variation->formatted_attributes;
+                        $itemData['variation_sku'] = $item->variation->sku;
+                    }
+                    
+                    return $itemData;
+                })->toArray(),
+                'total' => $vendorTotal,
+                'invoice_date' => $invoiceDate,
+                'customer' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'address' => $user->address,
+                    'mobile_number' => $user->mobile_number,
+                ],
+            ];
 
-        // Create proforma invoice with retry logic for duplicate invoice numbers
-        $proformaInvoice = $this->createProformaInvoiceWithRetry($user->id, $total, $invoiceData);
-        $invoiceNumber = $proformaInvoice->invoice_number;
+            // Create proforma invoice with retry logic for duplicate invoice numbers
+            $proformaInvoice = $this->createProformaInvoiceWithRetry($user->id, $vendorTotal, $invoiceData, $vendorId > 0 ? $vendorId : null);
+            $createdInvoices[] = $proformaInvoice;
+            
+            // Add the user as a customer of this vendor
+            if ($vendorId > 0) {
+                \App\Models\VendorCustomer::addCustomerToVendor($vendorId, $user->id, $proformaInvoice->id);
+            }
+        }
+        
+        // Use the first invoice for main notification
+        $mainInvoice = $createdInvoices[0] ?? null;
+        $invoiceNumber = $mainInvoice ? $mainInvoice->invoice_number : 'N/A';
 
         // Create notifications for admin users
         $adminUsers = User::whereIn('user_role', ['admin', 'super_admin'])->get();
@@ -538,7 +558,7 @@ class CartController extends ApiController
                 'message' => 'A new proforma invoice #' . $invoiceNumber . ' has been created by ' . $user->name,
                 'type' => 'proforma_invoice',
                 'data' => json_encode([
-                    'invoice_id' => $proformaInvoice->id,
+                    'invoice_id' => $mainInvoice->id,
                     'invoice_number' => $invoiceNumber,
                     'customer_name' => $user->name,
                     'customer_avatar' => $user->avatar ? asset('storage/avatars/' . $user->avatar) : null,
@@ -554,7 +574,7 @@ class CartController extends ApiController
                         'body' => 'A new proforma invoice #' . $invoiceNumber . ' has been created by ' . $user->name,
                     ],
                     'data' => [
-                        'invoice_id' => $proformaInvoice->id,
+                        'invoice_id' => $mainInvoice->id,
                         'invoice_number' => $invoiceNumber,
                         'type' => 'proforma_invoice_created',
                     ],
@@ -567,9 +587,10 @@ class CartController extends ApiController
         ShoppingCartItem::where('user_id', $user->id)->delete();
 
         return $this->sendResponse([
-            'invoice' => $proformaInvoice,
-            'invoice_data' => $invoiceData,
-        ], 'Proforma invoice generated successfully.', 201);
+            'invoices' => $createdInvoices,
+            'invoice' => $mainInvoice, // Keep for backward compatibility
+            'total_invoices' => count($createdInvoices),
+        ], 'Proforma invoice(s) generated successfully.', 201);
     }
 
     /**
@@ -611,18 +632,19 @@ class CartController extends ApiController
      * @param  int  $userId
      * @param  float  $total
      * @param  array  $invoiceData
+     * @param  int|null  $vendorId
      * @param  int  $maxRetries
      * @return \App\Models\ProformaInvoice
      * @throws \Exception
      */
-    private function createProformaInvoiceWithRetry($userId, $total, $invoiceData, $maxRetries = 5)
+    private function createProformaInvoiceWithRetry($userId, $total, $invoiceData, $vendorId = null, $maxRetries = 5)
     {
         $attempts = 0;
         $lastException = null;
         
         while ($attempts < $maxRetries) {
             try {
-                return \Illuminate\Support\Facades\DB::transaction(function () use ($userId, $total, $invoiceData) {
+                return \Illuminate\Support\Facades\DB::transaction(function () use ($userId, $total, $invoiceData, $vendorId) {
                     // Generate invoice number inside the transaction
                     $invoiceNumber = $this->generateInvoiceNumber();
                     
@@ -630,6 +652,7 @@ class CartController extends ApiController
                     return ProformaInvoice::create([
                         'invoice_number' => $invoiceNumber,
                         'user_id' => $userId,
+                        'vendor_id' => $vendorId,
                         'total_amount' => $total,
                         'invoice_data' => $invoiceData,
                         'status' => ProformaInvoice::STATUS_DRAFT ?? 'draft',

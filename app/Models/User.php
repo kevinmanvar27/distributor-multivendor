@@ -399,11 +399,29 @@ class User extends Authenticatable
     }
     
     /**
-     * Check if this user is a vendor store customer.
+     * Check if this user is a vendor store customer (registered from vendor store).
      */
     public function isVendorCustomer(): bool
     {
         return $this->vendor_id !== null && $this->user_role === 'user';
+    }
+    
+    /**
+     * Get all vendors this user is a customer of (through invoices).
+     */
+    public function customerOfVendors()
+    {
+        return $this->belongsToMany(Vendor::class, 'vendor_customers', 'user_id', 'vendor_id')
+            ->withTimestamps()
+            ->withPivot('first_invoice_id');
+    }
+    
+    /**
+     * Check if user is a customer of a specific vendor.
+     */
+    public function isCustomerOfVendor($vendorId): bool
+    {
+        return $this->customerOfVendors()->where('vendors.id', $vendorId)->exists();
     }
     
     /**

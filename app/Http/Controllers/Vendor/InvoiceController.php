@@ -90,9 +90,19 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get();
         
-        // Get customers - only those registered with this vendor
+        // Get customers - users who have ordered from this vendor OR all regular users
+        // This allows vendor to create invoices for new customers too
         $customers = User::where('user_role', 'user')
-            ->where('vendor_id', $vendor->id)
+            ->where(function($q) use ($vendor) {
+                // Include existing customers of this vendor
+                $q->whereHas('customerOfVendors', function($subQ) use ($vendor) {
+                    $subQ->where('vendors.id', $vendor->id);
+                })
+                // Also include all other users so vendor can add new customers
+                ->orWhereDoesntHave('customerOfVendors', function($subQ) use ($vendor) {
+                    $subQ->where('vendors.id', $vendor->id);
+                });
+            })
             ->orderBy('name')
             ->get();
 
@@ -155,6 +165,11 @@ class InvoiceController extends Controller
                 'customer' => $request->user_id ? User::find($request->user_id)->toArray() : null,
             ],
         ]);
+
+        // Add the user as a customer of this vendor (if user is selected)
+        if ($request->user_id) {
+            \App\Models\VendorCustomer::addCustomerToVendor($vendor->id, $request->user_id, $invoice->id);
+        }
 
         return redirect()->route('vendor.invoices.show', $invoice)
             ->with('success', 'Invoice created successfully.');
@@ -417,6 +432,7 @@ class InvoiceController extends Controller
 
     /**
      * Remove an item from the invoice.
+     * When an item is removed, the entire invoice is deleted.
      */
     public function removeItem(Request $request, ProformaInvoice $invoice)
     {
@@ -427,50 +443,14 @@ class InvoiceController extends Controller
             abort(403, 'Unauthorized access to this invoice.');
         }
         
-        $itemIndex = $request->item_index;
+        // Store invoice number for success message
+        $invoiceNumber = $invoice->invoice_number;
         
-        // Get existing invoice data
-        $invoiceData = $invoice->invoice_data;
-        if (is_string($invoiceData)) {
-            $invoiceData = json_decode($invoiceData, true);
-        }
-        
-        $cartItems = $invoiceData['cart_items'] ?? [];
-        
-        // Remove the item at the specified index
-        if (isset($cartItems[$itemIndex])) {
-            array_splice($cartItems, $itemIndex, 1);
-        }
-        
-        // Recalculate totals
-        $subtotal = 0;
-        foreach ($cartItems as $item) {
-            $subtotal += floatval($item['total'] ?? 0);
-        }
-        
-        $gstType = $invoiceData['gst_type'] ?? 'with_gst';
-        $taxPercentage = $gstType === 'without_gst' ? 0 : floatval($invoiceData['tax_percentage'] ?? 18);
-        $taxAmount = $gstType === 'without_gst' ? 0 : ($subtotal * $taxPercentage / 100);
-        $shipping = floatval($invoiceData['shipping'] ?? 0);
-        $discountAmount = floatval($invoiceData['discount_amount'] ?? 0);
-        $couponDiscount = floatval($invoiceData['coupon_discount'] ?? 0);
-        
-        $total = ($subtotal + $shipping + $taxAmount) - $discountAmount - $couponDiscount;
-        
-        // Update invoice data
-        $invoiceData['cart_items'] = $cartItems;
-        $invoiceData['subtotal'] = $subtotal;
-        $invoiceData['total'] = $total;
-        $invoiceData['tax_amount'] = $taxAmount;
-        
-        // Update invoice
-        $invoice->update([
-            'total_amount' => $total,
-            'invoice_data' => $invoiceData,
-        ]);
+        // Delete the entire invoice when removing an item
+        $invoice->delete();
 
-        return redirect()->route('vendor.invoices.show', $invoice)
-            ->with('success', 'Item removed from invoice successfully.');
+        return redirect()->route('vendor.invoices.index')
+            ->with('success', "Invoice #{$invoiceNumber} has been deleted.");
     }
 
     /**
