@@ -1,0 +1,8 @@
+Now add 
+Create Settings table where all details store and working on admin panel and images are stored using storage link and update time old image also remove from folder
+
+Settings page where i want tabs
+-   General settings - tab->1
+    Field like - Header Logo, Footer Logo, Favicon, Site Title, Site Description, Footer Text, Theme Color, Background Color
+-   Social Media settings - tab->2
+    Field like - Facebook URL, Twitter URL, Instagram URL, LinkedIn URL, YouTube URL, WhatsApp URL
