@@ -54,12 +54,9 @@ class ProductController extends Controller
     {
         $vendor = $this->getVendor();
         
-        // Get vendor's categories or all active categories
+        // Get only vendor's own categories
         $categories = Category::with('subCategories')
-            ->where(function($query) use ($vendor) {
-                $query->where('vendor_id', $vendor->id)
-                      ->orWhereNull('vendor_id');
-            })
+            ->where('vendor_id', $vendor->id)
             ->where('is_active', true)
             ->get();
         
@@ -274,11 +271,9 @@ class ProductController extends Controller
         
         $product->load(['mainPhoto', 'variations']);
         
+        // Get only vendor's own categories
         $categories = Category::with('subCategories')
-            ->where(function($query) use ($vendor) {
-                $query->where('vendor_id', $vendor->id)
-                      ->orWhereNull('vendor_id');
-            })
+            ->where('vendor_id', $vendor->id)
             ->where('is_active', true)
             ->get();
         
@@ -483,13 +478,43 @@ class ProductController extends Controller
     {
         $vendor = $this->getVendor();
         
-        $products = Product::with('mainPhoto')
+        // Get all products with their variations for this vendor
+        $allProducts = Product::with(['mainPhoto', 'variations'])
             ->where('vendor_id', $vendor->id)
-            ->where('in_stock', true)
-            ->whereColumn('stock_quantity', '<=', 'low_quantity_threshold')
-            ->orderBy('stock_quantity', 'asc')
-            ->paginate(10);
+            ->get();
         
-        return view('vendor.products.low-stock', compact('products'));
+        // Filter products that have low stock
+        $lowStockProducts = $allProducts->filter(function ($product) {
+            if ($product->isVariable()) {
+                // For variable products, check if any variation has low stock
+                foreach ($product->variations as $variation) {
+                    $threshold = $variation->low_quantity_threshold ?? $product->low_quantity_threshold ?? 10;
+                    // Include variations with 0 stock or stock <= threshold
+                    if ($variation->stock_quantity <= $threshold) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                // For simple products, check if stock <= threshold
+                $threshold = $product->low_quantity_threshold ?? 10;
+                return $product->stock_quantity <= $threshold;
+            }
+        });
+        
+        // Paginate the filtered results
+        $perPage = 10;
+        $currentPage = request()->get('page', 1);
+        $offset = ($currentPage - 1) * $perPage;
+        
+        $paginatedProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $lowStockProducts->slice($offset, $perPage)->values(),
+            $lowStockProducts->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+        
+        return view('vendor.products.low-stock', compact('paginatedProducts'));
     }
 }

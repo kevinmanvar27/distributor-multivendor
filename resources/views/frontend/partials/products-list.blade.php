@@ -15,16 +15,28 @@
                     <span class="badge bg-success text-white status-badge">{{ ucfirst($product->status) }}</span>
                 </div>
                 <div class="product-overlay">
-                    <a href="{{ route('frontend.product.show', $product->slug) }}" class="btn btn-light btn-sm quick-view-btn">
-                        <i class="fas fa-eye me-1"></i>Quick View
-                    </a>
+                    @if(isset($vendor) && $vendor)
+                        <a href="{{ route('frontend.vendor.product.show', ['vendorSlug' => $vendor->store_slug, 'product' => $product->slug]) }}" class="btn btn-light btn-sm quick-view-btn">
+                            <i class="fas fa-eye me-1"></i>Quick View
+                        </a>
+                    @else
+                        <a href="{{ route('frontend.product.show', $product->slug) }}" class="btn btn-light btn-sm quick-view-btn">
+                            <i class="fas fa-eye me-1"></i>Quick View
+                        </a>
+                    @endif
                 </div>
             </div>
             <div class="card-body d-flex flex-column">
                 <h5 class="card-title product-title">
-                    <a href="{{ route('frontend.product.show', $product->slug) }}" class="product-link text-decoration-none">
-                        {{ $product->name }}
-                    </a>
+                    @if(isset($vendor) && $vendor)
+                        <a href="{{ route('frontend.vendor.product.show', ['vendorSlug' => $vendor->store_slug, 'product' => $product->slug]) }}" class="product-link text-decoration-none">
+                            {{ $product->name }}
+                        </a>
+                    @else
+                        <a href="{{ route('frontend.product.show', $product->slug) }}" class="product-link text-decoration-none">
+                            {{ $product->name }}
+                        </a>
+                    @endif
                 </h5>
                 <p class="card-text flex-grow-1 product-description">{{ Str::limit($product->description ?? 'No description available', 100) }}</p>
                 <div class="mt-auto">
@@ -81,9 +93,15 @@
             <div class="card-footer bg-transparent border-0 pt-0">
                 @if($product->isVariable())
                     {{-- Variable Product: Show only View Product button --}}
-                    <a href="{{ route('frontend.product.show', $product->slug) }}" class="btn btn-theme w-100 action-btn">
-                        <i class="fas fa-eye me-1 btn-icon"></i>View Product
-                    </a>
+                    @if(isset($vendor) && $vendor)
+                        <a href="{{ route('frontend.vendor.product.show', ['vendorSlug' => $vendor->store_slug, 'product' => $product->slug]) }}" class="btn btn-theme w-100 action-btn">
+                            <i class="fas fa-eye me-1 btn-icon"></i>View Product
+                        </a>
+                    @else
+                        <a href="{{ route('frontend.product.show', $product->slug) }}" class="btn btn-theme w-100 action-btn">
+                            <i class="fas fa-eye me-1 btn-icon"></i>View Product
+                        </a>
+                    @endif
                 @else
                     {{-- Simple Product: Show Buy Now and Add to Cart buttons --}}
                     <div class="d-flex gap-2">

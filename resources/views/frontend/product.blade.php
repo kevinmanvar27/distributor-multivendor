@@ -9,6 +9,9 @@
     <nav aria-label="Breadcrumb" class="my-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('frontend.home') }}">Home</a></li>
+            @if(isset($vendor) && $vendor)
+                <li class="breadcrumb-item"><a href="{{ route('frontend.vendor.store', $vendor->store_slug) }}">{{ $vendor->store_name }}</a></li>
+            @endif
             <li class="breadcrumb-item active" aria-current="page">{{ $product->name }}</li>
         </ol>
     </nav>
@@ -258,6 +261,33 @@
                     
                     <!-- Product Meta Information -->
                     <div class="product-meta">
+                        @if(isset($vendor) && $vendor)
+                        <!-- Vendor/Seller Information -->
+                        <div class="vendor-info mb-4 p-3 bg-light rounded-3">
+                            <div class="d-flex align-items-center">
+                                <div class="vendor-logo me-3">
+                                    @if($vendor->store_logo_url)
+                                        <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                    @else
+                                        <div class="rounded-circle bg-theme d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                            <span class="text-white fw-bold">{{ strtoupper(substr($vendor->store_name, 0, 1)) }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="vendor-details flex-grow-1">
+                                    <p class="mb-0 fw-bold">Sold by</p>
+                                    <a href="{{ route('frontend.vendor.store', $vendor->store_slug) }}" class="text-theme text-decoration-none fw-bold">
+                                        {{ $vendor->store_name }}
+                                        <i class="fas fa-external-link-alt ms-1 small"></i>
+                                    </a>
+                                </div>
+                                <a href="{{ route('frontend.vendor.store', $vendor->store_slug) }}" class="btn btn-outline-theme btn-sm rounded-pill">
+                                    <i class="fas fa-store me-1"></i>Visit Store
+                                </a>
+                            </div>
+                        </div>
+                        @endif
+                        
                         <div class="row">
                             <div class="col-sm-6">
                                 <p class="mb-1 meta-item"><strong>SKU:</strong> <span class="meta-value" id="product-sku">{{ $product->id }}</span></p>

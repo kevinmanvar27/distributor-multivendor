@@ -5,13 +5,20 @@
 @section('content')
 <div class="container-fluid px-0">
     <!-- Store Banner -->
-    <div class="store-banner position-relative" style="height: 300px; background: linear-gradient(135deg, var(--theme-color) 0%, #333 100%); overflow: hidden;">
+    <div class="store-banner position-relative" style="height: 300px; overflow: hidden;">
         @if($vendor->store_banner_url)
-            <img src="{{ $vendor->store_banner_url }}" alt="{{ $vendor->store_name }}" class="w-100 h-100" style="object-fit: cover; opacity: 0.3;">
+            <div class="w-100 h-100" style="background: linear-gradient(135deg, var(--theme-color) 0%, #333 100%);">
+                <img src="{{ $vendor->store_banner_url }}" alt="{{ $vendor->store_name }}" class="w-100 h-100" style="object-fit: cover; opacity: 0.7;">
+            </div>
+        @else
+            <!-- Default gradient banner when no banner is uploaded -->
+            <div class="w-100 h-100" style="background: linear-gradient(135deg, var(--theme-color) 0%, #1a1a2e 50%, #16213e 100%);">
+                <div class="position-absolute w-100 h-100" style="background: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><pattern id=%22grid%22 width=%2210%22 height=%2210%22 patternUnits=%22userSpaceOnUse%22><path d=%22M 10 0 L 0 0 0 10%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.05)%22 stroke-width=%220.5%22/></pattern></defs><rect width=%22100%22 height=%22100%22 fill=%22url(%23grid)%22/></svg>'); opacity: 0.5;"></div>
+            </div>
         @endif
-        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.3);">
             <div class="text-center text-white">
-                <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="rounded-circle mb-3 border border-3 border-white" style="width: 120px; height: 120px; object-fit: cover;">
+                <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="rounded-circle mb-3 border border-3 border-white shadow-lg" style="width: 120px; height: 120px; object-fit: cover;">
                 <h1 class="fw-bold mb-2">{{ $vendor->store_name }}</h1>
                 @if($vendor->store_description)
                     <p class="mb-0 opacity-75">{{ Str::limit($vendor->store_description, 150) }}</p>

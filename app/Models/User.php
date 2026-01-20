@@ -24,6 +24,7 @@ class User extends Authenticatable
         'device_token',
         'password',
         'user_role',
+        'vendor_id',
         'date_of_birth',
         'avatar',
         'address',
@@ -386,5 +387,38 @@ class User extends Authenticatable
     public function scopeVendorStaff($query)
     {
         return $query->where('user_role', 'vendor_staff');
+    }
+    
+    /**
+     * Get the vendor store this customer registered from.
+     * This is for frontend customers who registered on a vendor's store.
+     */
+    public function registeredVendor()
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
+    }
+    
+    /**
+     * Check if this user is a vendor store customer.
+     */
+    public function isVendorCustomer(): bool
+    {
+        return $this->vendor_id !== null && $this->user_role === 'user';
+    }
+    
+    /**
+     * Scope a query to only include customers of a specific vendor.
+     */
+    public function scopeForVendor($query, $vendorId)
+    {
+        return $query->where('vendor_id', $vendorId)->where('user_role', 'user');
+    }
+    
+    /**
+     * Scope a query to only include main store customers (no vendor).
+     */
+    public function scopeMainStoreCustomers($query)
+    {
+        return $query->whereNull('vendor_id')->where('user_role', 'user');
     }
 }

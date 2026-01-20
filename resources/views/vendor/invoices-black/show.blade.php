@@ -1,6 +1,6 @@
 @extends('vendor.layouts.app')
 
-@section('title', 'Invoice - ' . $invoice->invoice_number)
+@section('title', 'Without GST Invoice - ' . setting('site_title', 'Vendor Panel'))
 
 @section('content')
 <div class="container-fluid h-100">
@@ -8,81 +8,27 @@
         @include('vendor.layouts.sidebar')
         
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
-            @include('vendor.layouts.header', ['pageTitle' => 'Invoice Details'])
+            @include('vendor.layouts.header', ['pageTitle' => 'Without GST Invoice Details'])
             
             <div class="pt-4 pb-2 mb-3">
                 <div class="row justify-content-center">
                     <div class="col-lg-10">
-                        <!-- Payment Status Card -->
-                        @php
-                            $pendingAmount = $invoice->total_amount - $invoice->paid_amount;
-                        @endphp
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-white border-0 py-3">
-                                <h5 class="card-title mb-0 fw-bold">Payment Status</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col-md-3">
-                                        <div class="p-3 bg-light rounded">
-                                            <small class="text-muted d-block">Total Amount</small>
-                                            <h5 class="mb-0 fw-bold">₹{{ number_format($invoice->total_amount, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="p-3 bg-success rounded">
-                                            <small class="text-white d-block">Paid Amount</small>
-                                            <h5 class="mb-0 fw-bold text-white">₹{{ number_format($invoice->paid_amount, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="p-3 bg-danger rounded">
-                                            <small class="text-white d-block">Pending Amount</small>
-                                            <h5 class="mb-0 fw-bold text-white">₹{{ number_format($pendingAmount, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="p-3 rounded">
-                                            <small class="text-muted d-block">Payment Status</small>
-                                            @switch($invoice->payment_status)
-                                                @case('unpaid')
-                                                    <span class="badge bg-secondary fs-6">Unpaid</span>
-                                                    @break
-                                                @case('partial')
-                                                    <span class="badge bg-warning fs-6">Partial</span>
-                                                    @break
-                                                @case('paid')
-                                                    <span class="badge bg-success fs-6">Paid</span>
-                                                    @break
-                                            @endswitch
-                                        </div>
-                                    </div>
-                                </div>
-                                @if($pendingAmount > 0)
-                                <div class="text-center mt-3">
-                                    <button type="button" class="btn btn-success rounded-pill px-4" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#paymentModal">
-                                        <i class="fas fa-plus me-1"></i> Add Payment
-                                    </button>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-header bg-white border-0 py-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <h4 class="card-title mb-0 fw-bold">Invoice Details</h4>
-                                        <p class="mb-0 text-muted">Invoice #{{ $invoice->invoice_number }}</p>
+                                        <h4 class="card-title mb-0 fw-bold">
+                                            <span class="badge bg-secondary me-2">Without GST</span>
+                                            Invoice Details
+                                        </h4>
+                                        <p class="mb-0 text-muted">Invoice #{{ $invoiceNumber }}</p>
                                     </div>
                                     <div>
-                                        <a href="{{ route('vendor.invoices.index') }}" class="btn btn-outline-secondary rounded-pill">
+                                        <a href="{{ route('vendor.invoices-black.index') }}" class="btn btn-outline-secondary rounded-pill">
                                             <i class="fas fa-arrow-left me-2"></i>Back to Invoices
                                         </a>
-                                        @if($invoice->status !== 'Draft')
-                                        <a href="{{ route('vendor.invoices.download', $invoice) }}" class="btn btn-theme rounded-pill ms-2">
+                                        @if(!$invoice->isDraft())
+                                        <a href="{{ route('vendor.invoices-black.download-pdf', $invoice->id) }}" class="btn btn-secondary rounded-pill ms-2">
                                             <i class="fas fa-file-pdf me-2"></i>Download PDF
                                         </a>
                                         @endif
@@ -97,7 +43,7 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                     </div>
                                 @endif
-
+                                
                                 @if(session('error'))
                                     <div class="alert alert-danger alert-dismissible fade show rounded-pill px-4 py-3 mb-4" role="alert">
                                         <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
@@ -105,16 +51,20 @@
                                     </div>
                                 @endif
                                 
+                                @if($invoice->original_invoice_id)
+                                    <div class="alert alert-info mb-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        This invoice was converted from a proforma invoice (Original ID: #{{ $invoice->original_invoice_id }})
+                                    </div>
+                                @endif
+                                
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <h5 class="fw-bold mb-3">From:</h5>
-                                        @php
-                                            $vendor = Auth::user()->vendor ?? Auth::user()->vendorStaff?->vendor;
-                                        @endphp
-                                        <p class="mb-1">{{ $vendor->store_name ?? $vendor->name ?? 'Store Name' }}</p>
-                                        <p class="mb-1">{{ $vendor->address ?? 'Store Address' }}</p>
-                                        <p class="mb-1">{{ $vendor->email ?? Auth::user()->email }}</p>
-                                        <p class="mb-1">{{ $vendor->phone ?? Auth::user()->phone ?? '' }}</p>
+                                        <p class="mb-1">{{ setting('site_title', 'Frontend App') }}</p>
+                                        <p class="mb-1">{{ setting('address', 'Company Address') }}</p>
+                                        <p class="mb-1">{{ setting('company_email', 'company@example.com') }}</p>
+                                        <p class="mb-1">{{ setting('company_phone', '+1 (555) 123-4567') }}</p>
                                     </div>
                                     
                                     <div class="col-md-6">
@@ -127,17 +77,6 @@
                                             @endif
                                             @if(!empty($customer['mobile_number']))
                                                 <p class="mb-1">{{ $customer['mobile_number'] }}</p>
-                                            @elseif(!empty($customer['phone']))
-                                                <p class="mb-1">{{ $customer['phone'] }}</p>
-                                            @endif
-                                        @elseif($invoice->user)
-                                            <p class="mb-1">{{ $invoice->user->name }}</p>
-                                            <p class="mb-1">{{ $invoice->user->email }}</p>
-                                            @if($invoice->user->address)
-                                                <p class="mb-1">{{ $invoice->user->address }}</p>
-                                            @endif
-                                            @if($invoice->user->phone)
-                                                <p class="mb-1">{{ $invoice->user->phone }}</p>
                                             @endif
                                         @else
                                             <p class="mb-1">Guest Customer</p>
@@ -147,14 +86,18 @@
                                 </div>
                                 
                                 <!-- Editable Invoice Form -->
-                                <form id="invoiceForm" action="{{ route('vendor.invoices.update', $invoice->id) }}" method="POST">
+                                <form id="invoiceForm" action="{{ route('vendor.invoices-black.update', $invoice->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
                             
                                     <div class="row mb-4">
                                         <div class="col-md-6">
-                                            <p class="mb-1"><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</p>
+                                            <p class="mb-1"><strong>Invoice #:</strong> {{ $invoiceNumber }}</p>
                                             <p class="mb-1"><strong>Date:</strong> {{ $invoiceDate }}</p>
+                                            <p class="mb-1">
+                                                <strong>Type:</strong> 
+                                                <span class="badge bg-secondary">Without GST</span>
+                                            </p>
                                         </div>
                                         <div class="col-md-6">
                                             <p class="mb-1">
@@ -181,22 +124,13 @@
                                                 @endswitch
                                             </p>
                                             
-                                            <!-- Status selection moved inside main form -->
+                                            <!-- Status selection -->
                                             <div class="mt-2">
                                                 <label for="status" class="form-label">Update Status:</label>
                                                 <select name="status" class="form-select form-select-sm status-select" id="status">
-                                                    @foreach(['Draft', 'Approved', 'Dispatch', 'Out for Delivery', 'Delivered', 'Return'] as $statusOption)
+                                                    @foreach(\App\Models\WithoutGstInvoice::STATUS_OPTIONS as $statusOption)
                                                         <option value="{{ $statusOption }}" {{ $invoice->status == $statusOption ? 'selected' : '' }}>{{ $statusOption }}</option>
                                                     @endforeach
-                                                </select>
-                                            </div>
-                                            
-                                            <!-- GST Type Selection -->
-                                            <div class="mt-2">
-                                                <label for="gst_type" class="form-label">Invoice Type:</label>
-                                                <select name="gst_type" class="form-select form-select-sm" id="gst_type">
-                                                    <option value="with_gst" {{ ($invoiceData['gst_type'] ?? 'with_gst') == 'with_gst' ? 'selected' : '' }}>With GST</option>
-                                                    <option value="without_gst" {{ ($invoiceData['gst_type'] ?? 'with_gst') == 'without_gst' ? 'selected' : '' }}>Without GST</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -265,7 +199,6 @@
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <!-- Changed from form to button with JavaScript handling -->
                                                         <button type="button" class="btn btn-danger btn-sm remove-item-btn" data-index="{{ $index }}">
                                                             <i class="fas fa-trash"></i> Remove
                                                         </button>
@@ -288,7 +221,7 @@
                                             <div class="card border-0 bg-light">
                                                 <div class="card-body">
                                                     <h5 class="card-title">Notes</h5>
-                                                    <textarea name="notes" class="form-control" rows="3">{{ $invoiceData['notes'] ?? 'This is a proforma invoice and not a tax invoice. Payment is due upon receipt.' }}</textarea>
+                                                    <textarea name="notes" class="form-control" rows="3">{{ $invoiceData['notes'] ?? 'This is a without-GST invoice. No tax is applicable.' }}</textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -303,24 +236,6 @@
                                                                 <div class="input-group">
                                                                     <span class="input-group-text">₹</span>
                                                                     <input type="number" name="subtotal" class="form-control subtotal" value="{{ number_format($invoiceData['subtotal'] ?? $total, 2, '.', '') }}" step="0.01" min="0" readonly>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        <tr class="gst-row" style="{{ ($invoiceData['gst_type'] ?? 'with_gst') == 'without_gst' ? 'display: none;' : '' }}">
-                                                            <td class="fw-bold">GST (%):</td>
-                                                            <td class="text-end">
-                                                                <div class="input-group">
-                                                                    <input type="number" name="tax_percentage" class="form-control tax-percentage" value="{{ ($invoiceData['gst_type'] ?? 'with_gst') == 'without_gst' ? 0 : ($invoiceData['tax_percentage'] ?? 18) }}" step="0.01" min="0" max="100">
-                                                                    <span class="input-group-text">%</span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        <tr class="gst-row" style="{{ ($invoiceData['gst_type'] ?? 'with_gst') == 'without_gst' ? 'display: none;' : '' }}">
-                                                            <td class="fw-bold">Tax Amount:</td>
-                                                            <td class="text-end">
-                                                                <div class="input-group">
-                                                                    <span class="input-group-text">₹</span>
-                                                                    <input type="number" name="tax_amount" class="form-control tax-amount" value="{{ ($invoiceData['gst_type'] ?? 'with_gst') == 'without_gst' ? 0 : ($invoiceData['tax_amount'] ?? 0) }}" step="0.01" min="0" readonly>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -367,22 +282,84 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                            
+                                            <!-- Hidden fields for GST (always 0 for without-GST invoices) -->
+                                            <input type="hidden" name="tax_percentage" value="0">
+                                            <input type="hidden" name="tax_amount" value="0">
+                                            <input type="hidden" name="gst_type" value="without_gst">
                                         </div>
                                     </div>
                                     
                                     <div class="d-flex justify-content-end mt-3">
-                                        <button type="submit" class="btn btn-theme rounded-pill">
+                                        <button type="submit" class="btn btn-secondary rounded-pill">
                                             <i class="fas fa-save me-1"></i>Save Invoice
                                         </button>
                                     </div>
                                 </form>
                                 
                                 <!-- Hidden form for removing items -->
-                                <form id="removeItemForm" action="{{ route('vendor.invoices.remove-item', $invoice->id) }}" method="POST" style="display: none;">
+                                <form id="removeItemForm" action="{{ route('vendor.invoices-black.remove-item', $invoice->id) }}" method="POST" style="display: none;">
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="item_index" id="itemIndexInput">
                                 </form>
+                                
+                                <!-- Payment Section -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h5 class="card-title mb-3">Payment Information</h5>
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1"><strong>Total Amount:</strong> ₹{{ number_format($invoice->total_amount, 2) }}</p>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1"><strong>Paid Amount:</strong> ₹{{ number_format($invoice->paid_amount, 2) }}</p>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <p class="mb-1">
+                                                            <strong>Payment Status:</strong>
+                                                            @switch($invoice->payment_status)
+                                                                @case('paid')
+                                                                    <span class="badge bg-success">Paid</span>
+                                                                    @break
+                                                                @case('partial')
+                                                                    <span class="badge bg-warning">Partial</span>
+                                                                    @break
+                                                                @default
+                                                                    <span class="badge bg-danger">Unpaid</span>
+                                                            @endswitch
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                @if($invoice->payment_status !== 'paid')
+                                                <hr>
+                                                <form action="{{ route('vendor.invoices-black.add-payment', $invoice->id) }}" method="POST" class="row g-3">
+                                                    @csrf
+                                                    <div class="col-md-6">
+                                                        <label for="paymentAmount" class="form-label">Add Payment</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">₹</span>
+                                                            <input type="number" class="form-control" id="paymentAmount" name="amount" 
+                                                                   step="0.01" min="0.01" 
+                                                                   max="{{ $invoice->total_amount - $invoice->paid_amount }}"
+                                                                   placeholder="Enter amount">
+                                                        </div>
+                                                        <small class="text-muted">Pending: ₹{{ number_format($invoice->total_amount - $invoice->paid_amount, 2) }}</small>
+                                                    </div>
+                                                    <div class="col-md-6 d-flex align-items-end">
+                                                        <button type="submit" class="btn btn-success rounded-pill">
+                                                            <i class="fas fa-plus me-1"></i>Add Payment
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -394,113 +371,8 @@
     </div>
 </div>
 
-<!-- Payment Modal -->
-@if($pendingAmount > 0)
-<div class="modal fade" id="paymentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Payment - {{ $invoice->invoice_number }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ route('vendor.pending-bills.add-payment', $invoice->id) }}" method="POST" id="paymentForm">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <div class="row text-center mb-3">
-                            <div class="col-4">
-                                <small class="text-muted">Total</small>
-                                <h6 class="mb-0">₹{{ number_format($invoice->total_amount, 2) }}</h6>
-                            </div>
-                            <div class="col-4">
-                                <small class="text-muted">Paid</small>
-                                <h6 class="mb-0 text-success">₹{{ number_format($invoice->paid_amount, 2) }}</h6>
-                            </div>
-                            <div class="col-4">
-                                <small class="text-muted">Pending</small>
-                                <h6 class="mb-0 text-danger">₹{{ number_format($pendingAmount, 2) }}</h6>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Payment Amount</label>
-                        <div class="input-group">
-                            <span class="input-group-text">₹</span>
-                            <input type="number" name="amount" id="paymentAmount" class="form-control" 
-                                   step="0.01" min="0.01" max="{{ $pendingAmount }}"
-                                   placeholder="Enter amount" required>
-                        </div>
-                        <small class="text-muted">Max: ₹{{ number_format($pendingAmount, 2) }}</small>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="payFullAmountBtn"
-                                data-amount="{{ number_format($pendingAmount, 2, '.', '') }}">
-                            Pay Full Amount (₹{{ number_format($pendingAmount, 2) }})
-                        </button>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success rounded-pill">
-                        <i class="fas fa-check me-1"></i> Add Payment
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Pay Full Amount button handler
-    const payFullAmountBtn = document.getElementById('payFullAmountBtn');
-    const paymentAmountInput = document.getElementById('paymentAmount');
-    
-    if (payFullAmountBtn && paymentAmountInput) {
-        payFullAmountBtn.addEventListener('click', function() {
-            const amount = this.getAttribute('data-amount');
-            paymentAmountInput.value = amount;
-        });
-    }
-
-    // GST Type Elements
-    const gstTypeSelect = document.getElementById('gst_type');
-    const gstRows = document.querySelectorAll('.gst-row');
-    const taxPercentageInput = document.querySelector('.tax-percentage');
-    const taxAmountInput = document.querySelector('.tax-amount');
-    
-    // Store original tax percentage for restoration
-    let originalTaxPercentage = parseFloat(taxPercentageInput?.value) || 18;
-    
-    // GST Type toggle functionality
-    if (gstTypeSelect) {
-        gstTypeSelect.addEventListener('change', function() {
-            const isWithoutGst = this.value === 'without_gst';
-            
-            // Show/Hide GST rows
-            gstRows.forEach(row => {
-                row.style.display = isWithoutGst ? 'none' : '';
-            });
-            
-            if (isWithoutGst) {
-                // Store current value before resetting (only if it's not already 0)
-                if (parseFloat(taxPercentageInput?.value) > 0) {
-                    originalTaxPercentage = parseFloat(taxPercentageInput.value);
-                }
-                // Set tax to 0 when Without GST
-                if (taxPercentageInput) taxPercentageInput.value = '0';
-                if (taxAmountInput) taxAmountInput.value = '0';
-            } else {
-                // Restore original tax percentage when With GST
-                if (taxPercentageInput) taxPercentageInput.value = originalTaxPercentage.toFixed(2);
-            }
-            
-            // Recalculate totals
-            calculateInvoiceTotals();
-        });
-    }
-
     // Calculate item totals and overall invoice totals
     function calculateItemTotal(row) {
         const priceInput = row.querySelector('.item-price');
@@ -515,43 +387,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Calculate overall invoice totals
+    // Calculate overall invoice totals (no tax for without-GST invoices)
     function calculateInvoiceTotals() {
         // Calculate subtotal from item totals
         let subtotal = 0;
         document.querySelectorAll('.item-total').forEach(input => {
             subtotal += parseFloat(input.value) || 0;
         });
-        const subtotalInput = document.querySelector('.subtotal');
-        if (subtotalInput) subtotalInput.value = subtotal.toFixed(2);
-        
-        // Check GST type
-        const isWithoutGst = gstTypeSelect?.value === 'without_gst';
-        
-        // Get tax percentage (force 0 if without GST)
-        let taxPercentage = 0;
-        if (!isWithoutGst && taxPercentageInput) {
-            taxPercentage = parseFloat(taxPercentageInput.value) || 0;
-        }
+        document.querySelector('.subtotal').value = subtotal.toFixed(2);
         
         // Get shipping
-        const shippingInput = document.querySelector('.shipping');
-        const shipping = parseFloat(shippingInput?.value) || 0;
+        const shipping = parseFloat(document.querySelector('.shipping').value) || 0;
         
         // Get discount amount
-        const discountInput = document.querySelector('.discount-amount');
-        const discountAmount = parseFloat(discountInput?.value) || 0;
+        const discountAmount = parseFloat(document.querySelector('.discount-amount').value) || 0;
         
-        // Calculate tax amount (tax on subtotal only, not including shipping)
-        const taxAmount = isWithoutGst ? 0 : (subtotal * taxPercentage / 100);
-        if (taxAmountInput) taxAmountInput.value = taxAmount.toFixed(2);
-        
-        // Calculate final total
-        // With GST: Total = (Subtotal + Shipping + Tax Amount) - Discount
-        // Without GST: Total = (Subtotal + Shipping) - Discount
-        const finalTotal = (subtotal + shipping + taxAmount) - discountAmount;
-        const totalInput = document.querySelector('.total');
-        if (totalInput) totalInput.value = finalTotal.toFixed(2);
+        // Calculate final total (no tax for without-GST invoices)
+        // Total = (Subtotal + Shipping) - Discount
+        const finalTotal = (subtotal + shipping) - discountAmount;
+        document.querySelector('.total').value = finalTotal.toFixed(2);
     }
     
     // Add event listeners to item inputs
@@ -563,29 +417,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add event listeners to discount, shipping, and tax inputs
-    const discountAmountInput = document.querySelector('.discount-amount');
+    // Add event listeners to discount and shipping inputs
+    const discountInput = document.querySelector('.discount-amount');
     const shippingInput = document.querySelector('.shipping');
     
-    if (discountAmountInput) {
-        discountAmountInput.addEventListener('input', calculateInvoiceTotals);
+    if (discountInput) {
+        discountInput.addEventListener('input', calculateInvoiceTotals);
     }
     if (shippingInput) {
         shippingInput.addEventListener('input', calculateInvoiceTotals);
     }
-    if (taxPercentageInput) {
-        taxPercentageInput.addEventListener('input', function() {
-            // Update original tax percentage when manually changed (only if With GST)
-            if (gstTypeSelect?.value !== 'without_gst') {
-                originalTaxPercentage = parseFloat(this.value) || 0;
-            }
-            calculateInvoiceTotals();
-        });
-    }
     
-    // Handle remove item buttons
-    document.querySelectorAll('.remove-item-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+    // Handle item removal
+    document.querySelectorAll('.remove-item-btn').forEach(button => {
+        button.addEventListener('click', function() {
             const index = this.getAttribute('data-index');
             if (confirm('Are you sure you want to remove this item?')) {
                 document.getElementById('itemIndexInput').value = index;
@@ -595,6 +440,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Initial calculation
+    document.querySelectorAll('tbody tr').forEach(row => {
+        calculateItemTotal(row);
+    });
     calculateInvoiceTotals();
 });
 </script>

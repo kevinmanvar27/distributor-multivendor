@@ -7,8 +7,8 @@
     <div class="position-sticky pt-3 d-flex flex-column vh-100">
         <div class="px-3 pb-3 border-bottom border-default sidebar-header">
             <div class="d-flex align-items-center mb-3">
-                @if(Auth::user()->vendor && Auth::user()->vendor->store_logo)
-                    <img src="{{ asset('storage/vendor/' . Auth::user()->vendor->store_logo) }}" alt="{{ Auth::user()->vendor->store_name ?? 'Vendor' }}" class="me-2 rounded sidebar-logo" height="48">
+                @if(Auth::user()->vendor && Auth::user()->vendor->store_logo_url)
+                    <img src="{{ Auth::user()->vendor->store_logo_url }}" alt="{{ Auth::user()->vendor->store_name ?? 'Vendor' }}" class="me-2 rounded sidebar-logo" height="48">
                 @elseif(setting('header_logo'))
                     <img src="{{ asset('storage/' . setting('header_logo')) }}" alt="{{ setting('site_title', 'Vendor Panel') }}" class="me-2 rounded sidebar-logo" height="48">
                 @else
@@ -45,27 +45,27 @@
                 </a>
             </li>
             
-            <!-- Media Library -->
+            <!-- Invoices -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.media*') ? 'active' : '' }}" href="{{ route('vendor.media.index') }}" data-title="Media Library">
-                    <i class="fas fa-images me-3"></i>
-                    <span class="sidebar-text">Media Library</span>
+                <a class="nav-link {{ request()->routeIs('vendor.invoices.*') && !request()->routeIs('vendor.invoices-black*') ? 'active' : '' }}" href="{{ route('vendor.invoices.index') }}" data-title="Invoices">
+                    <i class="fas fa-file-invoice me-3"></i>
+                    <span class="sidebar-text">Invoices</span>
                 </a>
             </li>
             
-            <!-- Orders Section -->
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.orders*') ? 'active' : '' }}" href="{{ route('vendor.orders.index') }}" data-title="Orders">
-                    <i class="fas fa-shopping-cart me-3"></i>
-                    <span class="sidebar-text">Orders</span>
+            <!-- Without GST Invoices -->
+            <!-- <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('vendor.invoices-black*') ? 'active' : '' }}" href="{{ route('vendor.invoices-black.index') }}" data-title="Without GST Invoices">
+                    <i class="fas fa-file-alt me-3"></i>
+                    <span class="sidebar-text">Without GST Invoices</span>
                 </a>
-            </li>
+            </li> -->
             
-            <!-- Coupons -->
+            <!-- Pending Bills -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.coupons*') ? 'active' : '' }}" href="{{ route('vendor.coupons.index') }}" data-title="Coupons">
-                    <i class="fas fa-ticket-alt me-3"></i>
-                    <span class="sidebar-text">Coupons</span>
+                <a class="nav-link {{ request()->routeIs('vendor.pending-bills*') ? 'active' : '' }}" href="{{ route('vendor.pending-bills.index') }}" data-title="Pending Bills">
+                    <i class="fas fa-file-invoice-dollar me-3"></i>
+                    <span class="sidebar-text">Pending Bills</span>
                 </a>
             </li>
             
@@ -77,19 +77,19 @@
                 </a>
             </li>
             
-            <!-- Reports & Analytics -->
+            <!-- Customers -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.reports*') ? 'active' : '' }}" href="{{ route('vendor.reports.index') }}" data-title="Reports">
-                    <i class="fas fa-chart-bar me-3"></i>
-                    <span class="sidebar-text">Reports</span>
+                <a class="nav-link {{ request()->routeIs('vendor.customers*') ? 'active' : '' }}" href="{{ route('vendor.customers.index') }}" data-title="Customers">
+                    <i class="fas fa-user-friends me-3"></i>
+                    <span class="sidebar-text">Customers</span>
                 </a>
             </li>
             
-            <!-- Product Analytics -->
+            <!-- Staff Management -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.analytics*') ? 'active' : '' }}" href="{{ route('vendor.analytics.products') }}" data-title="Product Analytics">
-                    <i class="fas fa-chart-line me-3"></i>
-                    <span class="sidebar-text">Product Analytics</span>
+                <a class="nav-link {{ request()->routeIs('vendor.staff*') ? 'active' : '' }}" href="{{ route('vendor.staff.index') }}" data-title="Staff">
+                    <i class="fas fa-users me-3"></i>
+                    <span class="sidebar-text">Staff</span>
                 </a>
             </li>
             
@@ -109,27 +109,35 @@
                 </a>
             </li>
             
-            <!-- Staff Management -->
+            <!-- Reports & Analytics -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.staff*') ? 'active' : '' }}" href="{{ route('vendor.staff.index') }}" data-title="Staff">
-                    <i class="fas fa-users me-3"></i>
-                    <span class="sidebar-text">Staff</span>
+                <a class="nav-link {{ request()->routeIs('vendor.reports*') ? 'active' : '' }}" href="{{ route('vendor.reports.index') }}" data-title="Reports">
+                    <i class="fas fa-chart-bar me-3"></i>
+                    <span class="sidebar-text">Reports</span>
                 </a>
             </li>
             
-            <!-- Invoices -->
+            <!-- Product Analytics -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.invoices*') ? 'active' : '' }}" href="{{ route('vendor.invoices.index') }}" data-title="Invoices">
-                    <i class="fas fa-file-invoice me-3"></i>
-                    <span class="sidebar-text">Invoices</span>
+                <a class="nav-link {{ request()->routeIs('vendor.analytics*') ? 'active' : '' }}" href="{{ route('vendor.analytics.products') }}" data-title="Product Analytics">
+                    <i class="fas fa-chart-line me-3"></i>
+                    <span class="sidebar-text">Product Analytics</span>
                 </a>
             </li>
             
-            <!-- Pending Bills -->
+            <!-- Coupons -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('vendor.pending-bills*') ? 'active' : '' }}" href="{{ route('vendor.pending-bills.index') }}" data-title="Pending Bills">
-                    <i class="fas fa-file-invoice-dollar me-3"></i>
-                    <span class="sidebar-text">Pending Bills</span>
+                <a class="nav-link {{ request()->routeIs('vendor.coupons*') ? 'active' : '' }}" href="{{ route('vendor.coupons.index') }}" data-title="Coupons">
+                    <i class="fas fa-ticket-alt me-3"></i>
+                    <span class="sidebar-text">Coupons</span>
+                </a>
+            </li>
+            
+            <!-- Media Library -->
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('vendor.media*') ? 'active' : '' }}" href="{{ route('vendor.media.index') }}" data-title="Media Library">
+                    <i class="fas fa-images me-3"></i>
+                    <span class="sidebar-text">Media Library</span>
                 </a>
             </li>
             

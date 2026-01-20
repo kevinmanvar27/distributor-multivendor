@@ -23,8 +23,8 @@
                     <div class="col-lg-4 mb-4">
                         <div class="card border-0 shadow-sm">
                             <div class="card-body text-center">
-                                @if($vendor->store_logo)
-                                    <img src="{{ asset('storage/' . $vendor->store_logo) }}" alt="{{ $vendor->store_name }}" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                                @if($vendor->store_logo_url)
+                                    <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
                                 @else
                                     <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 120px; height: 120px;">
                                         <span class="text-white display-4">{{ strtoupper(substr($vendor->store_name, 0, 1)) }}</span>

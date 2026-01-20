@@ -102,9 +102,9 @@
                                             
                                             <div class="mb-3">
                                                 <label for="store_logo" class="form-label fw-bold">Store Logo</label>
-                                                @if($vendor->store_logo)
+                                                @if($vendor->store_logo_url)
                                                     <div class="mb-2">
-                                                        <img src="{{ asset('storage/' . $vendor->store_logo) }}" alt="{{ $vendor->store_name }}" class="img-thumbnail" style="max-height: 100px;">
+                                                        <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="img-thumbnail" style="max-height: 100px;">
                                                     </div>
                                                 @endif
                                                 <input type="file" class="form-control" id="store_logo" name="store_logo" accept="image/*">

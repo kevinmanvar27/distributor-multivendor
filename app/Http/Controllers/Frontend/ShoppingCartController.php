@@ -562,11 +562,11 @@ class ShoppingCartController extends Controller
         }
         
         if (Auth::check()) {
-            $cartItems = Auth::user()->cartItems()->with(['product.mainPhoto', 'variation'])->get();
+            $cartItems = Auth::user()->cartItems()->with(['product.mainPhoto', 'product.vendor', 'variation'])->get();
         } else {
             // For guests, get cart items by session ID
             $sessionId = session()->getId();
-            $cartItems = ShoppingCartItem::forSession($sessionId)->with(['product.mainPhoto', 'variation'])->get();
+            $cartItems = ShoppingCartItem::forSession($sessionId)->with(['product.mainPhoto', 'product.vendor', 'variation'])->get();
         }
         
         $subtotal = $cartItems->sum(function ($item) {
@@ -608,67 +608,105 @@ class ShoppingCartController extends Controller
         // Generate invoice date
         $invoiceDate = now()->format('Y-m-d');
         
-        // Prepare invoice data for storage
-        $invoiceData = [
-            'cart_items' => $cartItems->map(function ($item) {
-                $itemData = [
-                    'id' => $item->id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'product_slug' => $item->product->slug,
-                    'product_description' => $item->product->description,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->price * $item->quantity
-                ];
-                
-                // Add variation details if this is a variable product
-                if ($item->product_variation_id && $item->variation) {
-                    $itemData['product_variation_id'] = $item->product_variation_id;
-                    $itemData['variation_display_name'] = $item->variation->display_name;
-                    $itemData['variation_attributes'] = $item->variation->formatted_attributes;
-                    $itemData['variation_sku'] = $item->variation->sku;
-                }
-                
-                return $itemData;
-            })->toArray(),
-            'subtotal' => $subtotal,
-            'coupon' => $couponData,
-            'coupon_discount' => $couponDiscount,
-            'total' => $total,
-            'invoice_date' => $invoiceDate,
-            'customer' => Auth::check() ? [
-                'id' => Auth::id(),
-                'name' => Auth::user()->name,
-                'email' => Auth::user()->email,
-                'address' => Auth::user()->address,
-                'mobile_number' => Auth::user()->mobile_number
-            ] : null,
-            'session_id' => Auth::check() ? null : session()->getId()
-        ];
+        // Group cart items by vendor to create separate invoices per vendor
+        $itemsByVendor = $cartItems->groupBy(function ($item) {
+            return $item->product->vendor_id ?? 0; // 0 for non-vendor products
+        });
         
-        // Save the proforma invoice to the database with retry logic for duplicate invoice numbers
-        $proformaInvoice = $this->createProformaInvoiceWithRetry($total, $invoiceData);
-        $invoiceNumber = $proformaInvoice->invoice_number;
+        $createdInvoices = [];
+        $vendorNotifications = [];
+        
+        foreach ($itemsByVendor as $vendorId => $vendorItems) {
+            // Calculate subtotal for this vendor's items
+            $vendorSubtotal = $vendorItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+            
+            // Calculate proportional coupon discount for this vendor
+            $vendorCouponDiscount = 0;
+            $vendorCouponData = null;
+            if ($couponDiscount > 0 && $subtotal > 0) {
+                $proportion = $vendorSubtotal / $subtotal;
+                $vendorCouponDiscount = round($couponDiscount * $proportion, 2);
+                if ($couponData) {
+                    $vendorCouponData = array_merge($couponData, ['discount_amount' => $vendorCouponDiscount]);
+                }
+            }
+            
+            $vendorTotal = $vendorSubtotal - $vendorCouponDiscount;
+            
+            // Prepare invoice data for this vendor
+            $invoiceData = [
+                'cart_items' => $vendorItems->map(function ($item) {
+                    $itemData = [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'product_slug' => $item->product->slug,
+                        'product_description' => $item->product->description,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'total' => $item->price * $item->quantity,
+                        'vendor_id' => $item->product->vendor_id,
+                    ];
+                    
+                    // Add variation details if this is a variable product
+                    if ($item->product_variation_id && $item->variation) {
+                        $itemData['product_variation_id'] = $item->product_variation_id;
+                        $itemData['variation_display_name'] = $item->variation->display_name;
+                        $itemData['variation_attributes'] = $item->variation->formatted_attributes;
+                        $itemData['variation_sku'] = $item->variation->sku;
+                    }
+                    
+                    return $itemData;
+                })->toArray(),
+                'subtotal' => $vendorSubtotal,
+                'coupon' => $vendorCouponData,
+                'coupon_discount' => $vendorCouponDiscount,
+                'total' => $vendorTotal,
+                'invoice_date' => $invoiceDate,
+                'customer' => Auth::check() ? [
+                    'id' => Auth::id(),
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'address' => Auth::user()->address,
+                    'mobile_number' => Auth::user()->mobile_number
+                ] : null,
+                'session_id' => Auth::check() ? null : session()->getId()
+            ];
+            
+            // Save the proforma invoice to the database with retry logic for duplicate invoice numbers
+            $proformaInvoice = $this->createProformaInvoiceWithRetry($vendorTotal, $invoiceData, $vendorId > 0 ? $vendorId : null);
+            $createdInvoices[] = $proformaInvoice;
+            
+            // Store vendor info for notifications
+            if ($vendorId > 0) {
+                $vendorNotifications[$vendorId] = [
+                    'invoice' => $proformaInvoice,
+                    'vendor_id' => $vendorId
+                ];
+            }
+        }
+        
+        // Use the first invoice for coupon recording and main notification
+        $mainInvoice = $createdInvoices[0] ?? null;
+        $invoiceNumber = $mainInvoice ? $mainInvoice->invoice_number : 'N/A';
         
         // Record coupon usage after invoice is created (so we can link to invoice)
-        if ($couponToRecord && $couponDiscount > 0) {
-            $couponToRecord->recordUsage(Auth::user(), $couponDiscount, $proformaInvoice->id);
+        if ($couponToRecord && $couponDiscount > 0 && $mainInvoice) {
+            $couponToRecord->recordUsage(Auth::user(), $couponDiscount, $mainInvoice->id);
         }
         
         // Create database notifications for admin users
         $adminUsers = User::where('user_role', 'admin')->orWhere('user_role', 'super_admin')->get();
         foreach ($adminUsers as $adminUser) {
-            // Get user avatar URL
-            $avatarUrl = $adminUser->avatar ? asset('storage/avatars/' . $adminUser->avatar) : null;
-            
             Notification::create([
                 'user_id' => $adminUser->id,
                 'title' => 'New Proforma Invoice Created',
                 'message' => 'A new proforma invoice #' . $invoiceNumber . ' has been created by ' . (Auth::check() ? Auth::user()->name : 'Guest'),
                 'type' => 'proforma_invoice',
                 'data' => json_encode([
-                    'invoice_id' => $proformaInvoice->id,
+                    'invoice_id' => $mainInvoice ? $mainInvoice->id : null,
                     'invoice_number' => $invoiceNumber,
                     'customer_name' => Auth::check() ? Auth::user()->name : 'Guest',
                     'customer_avatar' => Auth::check() ? (Auth::user()->avatar ? asset('storage/avatars/' . Auth::user()->avatar) : null) : null
@@ -687,13 +725,55 @@ class ShoppingCartController extends Controller
                             'body' => 'A new proforma invoice #' . $invoiceNumber . ' has been created by ' . Auth::user()->name
                         ],
                         'data' => [
-                            'invoice_id' => $proformaInvoice->id,
+                            'invoice_id' => $mainInvoice ? $mainInvoice->id : null,
                             'invoice_number' => $invoiceNumber,
                             'type' => 'proforma_invoice_created'
                         ]
                     ];
                     
                     $this->notificationService->sendPushNotification($adminUser->device_token, $payload);
+                }
+            }
+        }
+        
+        // Send notifications to vendors for their respective invoices
+        foreach ($vendorNotifications as $vendorId => $data) {
+            $vendor = \App\Models\Vendor::find($vendorId);
+            if ($vendor && $vendor->user) {
+                $vendorInvoice = $data['invoice'];
+                
+                // Create database notification for vendor
+                Notification::create([
+                    'user_id' => $vendor->user_id,
+                    'title' => 'New Order Invoice Received',
+                    'message' => 'A new proforma invoice #' . $vendorInvoice->invoice_number . ' has been created for your store by ' . (Auth::check() ? Auth::user()->name : 'Guest'),
+                    'type' => 'vendor_proforma_invoice',
+                    'data' => json_encode([
+                        'invoice_id' => $vendorInvoice->id,
+                        'invoice_number' => $vendorInvoice->invoice_number,
+                        'customer_name' => Auth::check() ? Auth::user()->name : 'Guest',
+                        'customer_avatar' => Auth::check() ? (Auth::user()->avatar ? asset('storage/avatars/' . Auth::user()->avatar) : null) : null,
+                        'total_amount' => $vendorInvoice->total_amount,
+                        'vendor_id' => $vendorId
+                    ]),
+                    'read' => false,
+                ]);
+                
+                // Send push notification to vendor if they have device token
+                if (!empty($vendor->user->device_token)) {
+                    $payload = [
+                        'notification' => [
+                            'title' => 'New Order Invoice Received',
+                            'body' => 'A new proforma invoice #' . $vendorInvoice->invoice_number . ' worth ₹' . number_format($vendorInvoice->total_amount, 2) . ' has been created for your store'
+                        ],
+                        'data' => [
+                            'invoice_id' => $vendorInvoice->id,
+                            'invoice_number' => $vendorInvoice->invoice_number,
+                            'type' => 'vendor_proforma_invoice_created'
+                        ]
+                    ];
+                    
+                    $this->notificationService->sendPushNotification($vendor->user->device_token, $payload);
                 }
             }
         }
@@ -1082,18 +1162,19 @@ class ShoppingCartController extends Controller
      *
      * @param  float  $total
      * @param  array  $invoiceData
+     * @param  int|null  $vendorId
      * @param  int  $maxRetries
      * @return \App\Models\ProformaInvoice
      * @throws \Exception
      */
-    private function createProformaInvoiceWithRetry($total, $invoiceData, $maxRetries = 5)
+    private function createProformaInvoiceWithRetry($total, $invoiceData, $vendorId = null, $maxRetries = 5)
     {
         $attempts = 0;
         $lastException = null;
         
         while ($attempts < $maxRetries) {
             try {
-                return \Illuminate\Support\Facades\DB::transaction(function () use ($total, $invoiceData) {
+                return \Illuminate\Support\Facades\DB::transaction(function () use ($total, $invoiceData, $vendorId) {
                     // Generate invoice number inside the transaction
                     $invoiceNumber = $this->generateInvoiceNumber();
                     
@@ -1101,6 +1182,7 @@ class ShoppingCartController extends Controller
                     return ProformaInvoice::create([
                         'invoice_number' => $invoiceNumber,
                         'user_id' => Auth::check() ? Auth::id() : null,
+                        'vendor_id' => $vendorId,
                         'session_id' => Auth::check() ? null : session()->getId(),
                         'total_amount' => $total,
                         'invoice_data' => $invoiceData,

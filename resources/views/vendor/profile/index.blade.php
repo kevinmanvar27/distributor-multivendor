@@ -46,8 +46,8 @@
                                     
                                     <div class="text-center mb-4">
                                         <div class="position-relative d-inline-block">
-                                            @if($vendor && $vendor->store_logo)
-                                                <img src="{{ asset('storage/vendor/' . $vendor->store_logo) }}" alt="{{ $vendor->store_name }}" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+                                            @if($vendor && $vendor->store_logo_url)
+                                                <img src="{{ $vendor->store_logo_url }}" alt="{{ $vendor->store_name }}" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
                                             @else
                                                 <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
                                                     <span class="text-white display-4">{{ strtoupper(substr($vendor->store_name ?? 'V', 0, 1)) }}</span>
@@ -288,8 +288,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="text-center mb-3">
-                                    @if($vendor && $vendor->store_logo)
-                                        <img src="{{ asset('storage/vendor/' . $vendor->store_logo) }}" alt="Store Logo" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                    @if($vendor && $vendor->store_logo_url)
+                                        <img src="{{ $vendor->store_logo_url }}" alt="Store Logo" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
                                     @else
                                         <div class="bg-light d-flex align-items-center justify-content-center" style="width: 200px; height: 200px; margin: 0 auto;">
                                             <i class="fas fa-store fa-4x text-muted"></i>
@@ -331,8 +331,8 @@
                             </div>
                             <div class="card-body">
                                 <div class="text-center mb-3">
-                                    @if($vendor && $vendor->store_banner)
-                                        <img src="{{ asset('storage/vendor/' . $vendor->store_banner) }}" alt="Store Banner" class="img-thumbnail" style="max-width: 100%; max-height: 200px;">
+                                    @if($vendor && $vendor->store_banner_url)
+                                        <img src="{{ $vendor->store_banner_url }}" alt="Store Banner" class="img-thumbnail" style="max-width: 100%; max-height: 200px;">
                                     @else
                                         <div class="bg-light d-flex align-items-center justify-content-center" style="width: 100%; height: 150px;">
                                             <i class="fas fa-panorama fa-4x text-muted"></i>

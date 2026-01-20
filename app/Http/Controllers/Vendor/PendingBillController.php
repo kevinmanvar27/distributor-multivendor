@@ -120,7 +120,7 @@ class PendingBillController extends Controller
     }
 
     /**
-     * Show details of a specific invoice.
+     * Show details of a specific invoice - redirects to invoices.show
      */
     public function show(ProformaInvoice $invoice)
     {
@@ -131,9 +131,8 @@ class PendingBillController extends Controller
             abort(403, 'Unauthorized access to this invoice.');
         }
         
-        $invoice->load('user');
-        
-        return view('vendor.pending-bills.show', compact('invoice'));
+        // Redirect to the invoice show page
+        return redirect()->route('vendor.invoices.show', $invoice->id);
     }
 
     /**
@@ -171,6 +170,43 @@ class PendingBillController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Payment of ₹' . number_format($request->amount, 2) . ' recorded successfully.');
+    }
+
+    /**
+     * Add a payment for an invoice (from invoice show page modal).
+     */
+    public function addPayment(Request $request, ProformaInvoice $invoice)
+    {
+        $vendor = $this->getVendor();
+        
+        // Ensure invoice belongs to vendor
+        if ($invoice->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        
+        $pendingAmount = $invoice->total_amount - $invoice->paid_amount;
+        
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01|max:' . $pendingAmount,
+        ]);
+
+        $newPaidAmount = $invoice->paid_amount + $request->amount;
+        
+        // Determine new payment status
+        if ($newPaidAmount >= $invoice->total_amount) {
+            $paymentStatus = 'paid';
+        } elseif ($newPaidAmount > 0) {
+            $paymentStatus = 'partial';
+        } else {
+            $paymentStatus = 'unpaid';
+        }
+
+        $invoice->update([
+            'paid_amount' => $newPaidAmount,
+            'payment_status' => $paymentStatus,
+        ]);
+
+        return redirect()->back()->with('success', 'Payment of ₹' . number_format($request->amount, 2) . ' added successfully.');
     }
 
     /**

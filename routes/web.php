@@ -27,7 +27,6 @@ use App\Http\Controllers\Frontend\RegisterController;
 use App\Http\Controllers\Frontend\ShoppingCartController;
 use App\Http\Controllers\Frontend\PageController as FrontendPageController;
 use App\Http\Controllers\Frontend\AccountDeletionController;
-use App\Http\Controllers\Frontend\VendorStoreController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\SalaryController;
 use App\Http\Controllers\Admin\ProductAnalyticsController;
@@ -76,14 +75,12 @@ Route::middleware('frontend.access')->group(function () {
     // AJAX route for fetching subcategories
     Route::get('/frontend/category/{category}/subcategories', [FrontendController::class, 'getSubcategories'])->name('frontend.category.subcategories');
     
+    // Vendor Store Page (within main frontend)
+    Route::get('/store/{vendorSlug}', [FrontendController::class, 'vendorStore'])->name('frontend.vendor.store');
+    
     // Frontend Pages Routes
     Route::get('/pages', [FrontendPageController::class, 'index'])->name('frontend.pages.index');
     Route::get('/page/{slug}', [FrontendPageController::class, 'show'])->name('frontend.page.show');
-    
-    // Vendor Store Frontend Routes
-    Route::get('/store/{slug}', [VendorStoreController::class, 'show'])->name('store.show');
-    Route::get('/store/{slug}/products', [VendorStoreController::class, 'products'])->name('store.products');
-    Route::get('/store/{slug}/product/{productSlug}', [VendorStoreController::class, 'productDetail'])->name('store.product');
 });
 
 // Frontend Authenticated Routes

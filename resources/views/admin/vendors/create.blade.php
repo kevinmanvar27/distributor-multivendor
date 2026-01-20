@@ -47,17 +47,34 @@
                                             
                                             <div class="mb-3">
                                                 <label for="name" class="form-label fw-bold">Full Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-pill px-4" id="name" name="name" value="{{ old('name') }}" required>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required>
+                                                @error('name')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="user_email" class="form-label fw-bold">Login Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control rounded-pill px-4" id="user_email" name="user_email" value="{{ old('user_email') }}" required>
+                                                <label for="email" class="form-label fw-bold">Login Email <span class="text-danger">*</span></label>
+                                                <input type="email" class="form-control rounded-pill px-4 @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required>
+                                                @error('email')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="mobile_number" class="form-label fw-bold">Mobile Number <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('mobile_number') is-invalid @enderror" id="mobile_number" name="mobile_number" value="{{ old('mobile_number') }}" required>
+                                                @error('mobile_number')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
                                                 <label for="password" class="form-label fw-bold">Password <span class="text-danger">*</span></label>
-                                                <input type="password" class="form-control rounded-pill px-4" id="password" name="password" required>
+                                                <input type="password" class="form-control rounded-pill px-4 @error('password') is-invalid @enderror" id="password" name="password" required>
+                                                @error('password')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
@@ -74,22 +91,34 @@
                                             
                                             <div class="mb-3">
                                                 <label for="store_name" class="form-label fw-bold">Store Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-pill px-4" id="store_name" name="store_name" value="{{ old('store_name') }}" required>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('store_name') is-invalid @enderror" id="store_name" name="store_name" value="{{ old('store_name') }}" required>
+                                                @error('store_name')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="slug" class="form-label fw-bold">Store Slug</label>
-                                                <input type="text" class="form-control rounded-pill px-4" id="slug" name="slug" value="{{ old('slug') }}" placeholder="auto-generated if empty">
+                                                <label for="store_description" class="form-label fw-bold">Store Description</label>
+                                                <textarea class="form-control @error('store_description') is-invalid @enderror" id="store_description" name="store_description" rows="3">{{ old('store_description') }}</textarea>
+                                                @error('store_description')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="email" class="form-label fw-bold">Business Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control rounded-pill px-4" id="email" name="email" value="{{ old('email') }}" required>
+                                                <label for="business_email" class="form-label fw-bold">Business Email</label>
+                                                <input type="email" class="form-control rounded-pill px-4 @error('business_email') is-invalid @enderror" id="business_email" name="business_email" value="{{ old('business_email') }}" placeholder="Uses login email if empty">
+                                                @error('business_email')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="phone" class="form-label fw-bold">Phone Number</label>
-                                                <input type="text" class="form-control rounded-pill px-4" id="phone" name="phone" value="{{ old('phone') }}">
+                                                <label for="business_phone" class="form-label fw-bold">Business Phone</label>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('business_phone') is-invalid @enderror" id="business_phone" name="business_phone" value="{{ old('business_phone') }}" placeholder="Uses mobile number if empty">
+                                                @error('business_phone')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                         </div>
                                     </div>
@@ -104,29 +133,44 @@
                                             </h5>
                                             
                                             <div class="mb-3">
-                                                <label for="address" class="form-label fw-bold">Street Address</label>
-                                                <input type="text" class="form-control rounded-pill px-4" id="address" name="address" value="{{ old('address') }}">
+                                                <label for="business_address" class="form-label fw-bold">Business Address <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('business_address') is-invalid @enderror" id="business_address" name="business_address" value="{{ old('business_address') }}" required>
+                                                @error('business_address')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="city" class="form-label fw-bold">City</label>
-                                                    <input type="text" class="form-control rounded-pill px-4" id="city" name="city" value="{{ old('city') }}">
+                                                    <label for="city" class="form-label fw-bold">City <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control rounded-pill px-4 @error('city') is-invalid @enderror" id="city" name="city" value="{{ old('city') }}" required>
+                                                    @error('city')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="state" class="form-label fw-bold">State/Province</label>
-                                                    <input type="text" class="form-control rounded-pill px-4" id="state" name="state" value="{{ old('state') }}">
+                                                    <label for="state" class="form-label fw-bold">State/Province <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control rounded-pill px-4 @error('state') is-invalid @enderror" id="state" name="state" value="{{ old('state') }}" required>
+                                                    @error('state')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
                                                 </div>
                                             </div>
                                             
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="postal_code" class="form-label fw-bold">Postal Code</label>
-                                                    <input type="text" class="form-control rounded-pill px-4" id="postal_code" name="postal_code" value="{{ old('postal_code') }}">
+                                                    <label for="postal_code" class="form-label fw-bold">Postal Code <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control rounded-pill px-4 @error('postal_code') is-invalid @enderror" id="postal_code" name="postal_code" value="{{ old('postal_code') }}" required>
+                                                    @error('postal_code')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="country" class="form-label fw-bold">Country</label>
-                                                    <input type="text" class="form-control rounded-pill px-4" id="country" name="country" value="{{ old('country') }}">
+                                                    <label for="country" class="form-label fw-bold">Country <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control rounded-pill px-4 @error('country') is-invalid @enderror" id="country" name="country" value="{{ old('country') }}" required>
+                                                    @error('country')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
                                                 </div>
                                             </div>
                                         </div>
@@ -139,26 +183,39 @@
                                             
                                             <div class="mb-3">
                                                 <label for="status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
-                                                <select class="form-select rounded-pill" id="status" name="status" required>
-                                                    <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                                                    <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
+                                                <select class="form-select rounded-pill @error('status') is-invalid @enderror" id="status" name="status" required>
+                                                    <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                                    <option value="approved" {{ old('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                                                    <option value="rejected" {{ old('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                                     <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>Suspended</option>
                                                 </select>
+                                                @error('status')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
                                                 <label for="commission_rate" class="form-label fw-bold">Commission Rate (%)</label>
-                                                <input type="number" class="form-control rounded-pill px-4" id="commission_rate" name="commission_rate" value="{{ old('commission_rate', 10) }}" min="0" max="100" step="0.01">
+                                                <input type="number" class="form-control rounded-pill px-4 @error('commission_rate') is-invalid @enderror" id="commission_rate" name="commission_rate" value="{{ old('commission_rate', 10) }}" min="0" max="100" step="0.01">
+                                                @error('commission_rate')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="logo" class="form-label fw-bold">Store Logo</label>
-                                                <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                                                <label for="gst_number" class="form-label fw-bold">GST Number</label>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('gst_number') is-invalid @enderror" id="gst_number" name="gst_number" value="{{ old('gst_number') }}">
+                                                @error('gst_number')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                             
                                             <div class="mb-3">
-                                                <label for="description" class="form-label fw-bold">Store Description</label>
-                                                <textarea class="form-control" id="description" name="description" rows="3">{{ old('description') }}</textarea>
+                                                <label for="pan_number" class="form-label fw-bold">PAN Number</label>
+                                                <input type="text" class="form-control rounded-pill px-4 @error('pan_number') is-invalid @enderror" id="pan_number" name="pan_number" value="{{ old('pan_number') }}">
+                                                @error('pan_number')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
                                         </div>
                                     </div>

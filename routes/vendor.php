@@ -7,7 +7,6 @@ use App\Http\Controllers\Vendor\DashboardController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\CategoryController;
 use App\Http\Controllers\Vendor\ProfileController;
-use App\Http\Controllers\Vendor\OrderController;
 use App\Http\Controllers\Vendor\ReportController;
 use App\Http\Controllers\Vendor\MediaController;
 use App\Http\Controllers\Vendor\LeadController;
@@ -17,7 +16,10 @@ use App\Http\Controllers\Vendor\SalaryController;
 use App\Http\Controllers\Vendor\AttendanceController;
 use App\Http\Controllers\Vendor\PendingBillController;
 use App\Http\Controllers\Vendor\InvoiceController;
+use App\Http\Controllers\Vendor\WithoutGstInvoiceController;
+use App\Http\Controllers\Vendor\CustomerController;
 use App\Http\Controllers\Vendor\StaffController;
+use App\Http\Controllers\Vendor\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,10 +102,11 @@ Route::prefix('vendor')->name('vendor.')->middleware(['auth', 'vendor'])->group(
     Route::post('media', [MediaController::class, 'store'])->name('media.store');
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
     
-    // Order Management
-    Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('orders/export', [OrderController::class, 'export'])->name('orders.export');
-    Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    // Notification Management
+    Route::post('notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('notifications', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
     
     // Reports & Analytics
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
@@ -162,6 +165,7 @@ Route::prefix('vendor')->name('vendor.')->middleware(['auth', 'vendor'])->group(
     Route::get('pending-bills/user/{userId}', [PendingBillController::class, 'userBills'])->name('pending-bills.user');
     Route::get('pending-bills/{invoice}', [PendingBillController::class, 'show'])->name('pending-bills.show');
     Route::post('pending-bills/{invoice}/payment', [PendingBillController::class, 'recordPayment'])->name('pending-bills.record-payment');
+    Route::post('pending-bills/{invoice}/add-payment', [PendingBillController::class, 'addPayment'])->name('pending-bills.add-payment');
     
     // Invoices Management
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
@@ -170,6 +174,25 @@ Route::prefix('vendor')->name('vendor.')->middleware(['auth', 'vendor'])->group(
     Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
     Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+    Route::post('invoices/{invoice}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoices.update-status');
+    Route::get('invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+    Route::put('invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
+    Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+    Route::delete('invoices/{invoice}/remove-item', [InvoiceController::class, 'removeItem'])->name('invoices.remove-item');
+    
+    // Without GST Invoices Management
+    Route::get('invoices-black', [WithoutGstInvoiceController::class, 'index'])->name('invoices-black.index');
+    Route::get('invoices-black/{id}', [WithoutGstInvoiceController::class, 'show'])->name('invoices-black.show');
+    Route::get('invoices-black/{id}/download-pdf', [WithoutGstInvoiceController::class, 'downloadPDF'])->name('invoices-black.download-pdf');
+    Route::put('invoices-black/{id}', [WithoutGstInvoiceController::class, 'update'])->name('invoices-black.update');
+    Route::put('invoices-black/{id}/update-status', [WithoutGstInvoiceController::class, 'updateStatus'])->name('invoices-black.update-status');
+    Route::delete('invoices-black/{id}/remove-item', [WithoutGstInvoiceController::class, 'removeItem'])->name('invoices-black.remove-item');
+    Route::delete('invoices-black/{id}', [WithoutGstInvoiceController::class, 'destroy'])->name('invoices-black.destroy');
+    Route::post('invoices-black/{id}/add-payment', [WithoutGstInvoiceController::class, 'addPayment'])->name('invoices-black.add-payment');
+    
+    // Customer Management
+    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/{id}', [CustomerController::class, 'show'])->name('customers.show');
     
     // Staff Management
     Route::get('staff', [StaffController::class, 'index'])->name('staff.index');

@@ -244,12 +244,13 @@ class ProfileController extends Controller
         // Delete old logo if exists
         if ($vendor->store_logo) {
             Storage::disk('public')->delete('vendor/' . $vendor->store_logo);
+            Storage::disk('public')->delete('vendor/' . $vendor->id . '/' . $vendor->store_logo);
         }
 
-        // Store new logo
+        // Store new logo in vendor-specific folder
         $file = $request->file('store_logo');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->storeAs('vendor', $filename, 'public');
+        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $file->storeAs('vendor/' . $vendor->id, $filename, 'public');
 
         $vendor->update(['store_logo' => $filename]);
 
@@ -265,6 +266,7 @@ class ProfileController extends Controller
 
         if ($vendor->store_logo) {
             Storage::disk('public')->delete('vendor/' . $vendor->store_logo);
+            Storage::disk('public')->delete('vendor/' . $vendor->id . '/' . $vendor->store_logo);
             $vendor->update(['store_logo' => null]);
         }
 
@@ -285,12 +287,13 @@ class ProfileController extends Controller
         // Delete old banner if exists
         if ($vendor->store_banner) {
             Storage::disk('public')->delete('vendor/' . $vendor->store_banner);
+            Storage::disk('public')->delete('vendor/' . $vendor->id . '/' . $vendor->store_banner);
         }
 
-        // Store new banner
+        // Store new banner in vendor-specific folder
         $file = $request->file('store_banner');
-        $filename = time() . '_banner_' . $file->getClientOriginalName();
-        $file->storeAs('vendor', $filename, 'public');
+        $filename = time() . '_banner_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $file->storeAs('vendor/' . $vendor->id, $filename, 'public');
 
         $vendor->update(['store_banner' => $filename]);
 
@@ -306,6 +309,7 @@ class ProfileController extends Controller
 
         if ($vendor->store_banner) {
             Storage::disk('public')->delete('vendor/' . $vendor->store_banner);
+            Storage::disk('public')->delete('vendor/' . $vendor->id . '/' . $vendor->store_banner);
             $vendor->update(['store_banner' => null]);
         }
 

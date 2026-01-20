@@ -195,7 +195,7 @@
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>
-                                                <a href="{{ route('vendor.pending-bills.show', $invoice->id) }}" class="text-decoration-none">
+                                                <a href="{{ route('vendor.invoices.show', $invoice->id) }}" class="text-decoration-none">
                                                     {{ $invoice->invoice_number }}
                                                 </a>
                                             </td>
@@ -233,7 +233,7 @@
                                                             {{ $pendingAmount <= 0 ? 'disabled' : '' }}>
                                                         <i class="fas fa-plus"></i><span class="d-none d-md-inline ms-1">Pay</span>
                                                     </button>
-                                                    <a href="{{ route('vendor.pending-bills.show', $invoice->id) }}" 
+                                                    <a href="{{ route('vendor.invoices.show', $invoice->id) }}" 
                                                        class="btn btn-outline-primary rounded-end-pill px-2 px-md-3">
                                                         <i class="fas fa-eye"></i>
                                                     </a>

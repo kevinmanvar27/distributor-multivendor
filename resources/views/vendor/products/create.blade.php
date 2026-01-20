@@ -202,11 +202,23 @@
                                                     <h6 class="mb-0 fw-bold">Categories</h6>
                                                 </div>
                                                 <div class="card-body">
-                                                    <div class="category-list" style="max-height: 200px; overflow-y: auto;">
+                                                    <div class="category-list" style="max-height: 300px; overflow-y: auto;">
                                                         @foreach($categories ?? [] as $category)
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="categories[]" value="{{ $category->id }}" id="cat_{{ $category->id }}" {{ in_array($category->id, old('categories', [])) ? 'checked' : '' }}>
-                                                                <label class="form-check-label" for="cat_{{ $category->id }}">{{ $category->name }}</label>
+                                                            <div class="form-check mb-2 category-item" data-category-id="{{ $category->id }}">
+                                                                <input class="form-check-input category-checkbox" type="checkbox" id="cat_{{ $category->id }}" value="{{ $category->id }}" name="product_categories[{{ $category->id }}][category_id]">
+                                                                <label class="form-check-label fw-bold" for="cat_{{ $category->id }}">{{ $category->name }}</label>
+                                                                @if($category->subCategories && $category->subCategories->count() > 0)
+                                                                    <div class="subcategory-container ms-4 mt-2 d-none" id="subcategory_container_{{ $category->id }}">
+                                                                        @foreach($category->subCategories as $subcategory)
+                                                                            <div class="form-check mb-1">
+                                                                                <input class="form-check-input subcategory-checkbox" type="checkbox" id="subcat_{{ $subcategory->id }}" value="{{ $subcategory->id }}" name="product_categories[{{ $category->id }}][subcategory_ids][]" data-category-id="{{ $category->id }}">
+                                                                                <label class="form-check-label" for="subcat_{{ $subcategory->id }}">
+                                                                                    {{ $subcategory->name }}
+                                                                                </label>
+                                                                            </div>
+                                                                        @endforeach
+                                                                    </div>
+                                                                @endif
                                                             </div>
                                                         @endforeach
                                                     </div>
@@ -1210,6 +1222,30 @@
         loadMedia(1);
         $('#mediaLibraryModal').modal('show');
     }
+    
+    // Category/Subcategory Toggle Functionality
+    $(document).ready(function() {
+        // Initialize: Show subcategories for already checked categories
+        $('.category-checkbox:checked').each(function() {
+            const categoryId = $(this).val();
+            $('#subcategory_container_' + categoryId).removeClass('d-none');
+        });
+        
+        // Handle category checkbox changes
+        $('.category-checkbox').on('change', function() {
+            const categoryId = $(this).val();
+            const $subcategoryContainer = $('#subcategory_container_' + categoryId);
+            
+            if ($(this).is(':checked')) {
+                // Show subcategories when category is selected
+                $subcategoryContainer.removeClass('d-none');
+            } else {
+                // Hide and deselect subcategories when category is deselected
+                $subcategoryContainer.addClass('d-none');
+                $subcategoryContainer.find('.subcategory-checkbox').prop('checked', false);
+            }
+        });
+    });
 </script>
 @endsection
 

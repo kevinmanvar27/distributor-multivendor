@@ -35,8 +35,11 @@ class WithoutGstInvoice extends Model
     protected $fillable = [
         'invoice_number',
         'user_id',
+        'vendor_id',
         'session_id',
         'total_amount',
+        'paid_amount',
+        'payment_status',
         'invoice_data',
         'status',
         'original_invoice_id',
@@ -48,6 +51,7 @@ class WithoutGstInvoice extends Model
     protected $casts = [
         'invoice_data' => 'array',
         'total_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -58,6 +62,22 @@ class WithoutGstInvoice extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the vendor that owns the invoice.
+     */
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    /**
+     * Get the pending amount.
+     */
+    public function getPendingAmountAttribute()
+    {
+        return $this->total_amount - $this->paid_amount;
     }
 
     /**

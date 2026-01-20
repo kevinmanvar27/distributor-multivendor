@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Invoice - {{ $invoiceNumber }}</title>
+    <title>Without GST Invoice - {{ $invoiceNumber }}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
     <style>
@@ -28,7 +28,7 @@
             text-align: center;
             padding-bottom: 12px;
             margin-bottom: 25px;
-            border-bottom: 2px solid {{ setting('theme_color', '#FF6B00') }};
+            border-bottom: 2px solid #6c757d;
         }
 
         .header-logo {
@@ -40,7 +40,17 @@
             font-size: 20px;
             margin: 5px 0 0;
             font-weight: bold;
-            color: {{ setting('theme_color', '#FF6B00') }};
+            color: #6c757d;
+        }
+        
+        .without-gst-badge {
+            display: inline-block;
+            background: #6c757d;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-top: 5px;
         }
 
         /* SECTION TITLES */
@@ -49,8 +59,8 @@
             font-weight: bold;
             margin-bottom: 6px;
             padding-bottom: 4px;
-            border-bottom: 1px solid {{ setting('theme_color', '#FF6B00') }};
-            color: {{ setting('theme_color', '#FF6B00') }};
+            border-bottom: 1px solid #6c757d;
+            color: #6c757d;
         }
 
         /* FLEX GRID (Emulated for PDF) */
@@ -83,7 +93,7 @@
         }
 
         th {
-            background: {{ setting('theme_color', '#FF6B00') }};
+            background: #6c757d;
             color: #fff;
             padding: 8px 5px;
             text-align: left;
@@ -106,8 +116,8 @@
 
         /* NOTES BOX */
         .notes {
-            border: 1px solid {{ setting('theme_color', '#FF6B00') }};
-            background: rgba(255, 107, 0, 0.08);
+            border: 1px solid #6c757d;
+            background: rgba(108, 117, 125, 0.08);
             padding: 8px;
             margin-top: 10px;
             font-size: 10px;
@@ -120,18 +130,6 @@
             font-size: 9px;
             color: #777;
         }
-        
-        .payment-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-        }
-        
-        .payment-info table td {
-            border: none;
-            padding: 4px 5px;
-        }
     </style>
 </head>
 
@@ -142,13 +140,12 @@
     <div class="header">
         @if($vendor->logo)
             <img src="{{ public_path('storage/' . $vendor->logo) }}" class="header-logo">
-        @elseif(setting('header_logo'))
-            <img src="{{ public_path('storage/' . setting('header_logo')) }}" class="header-logo">
         @else
             <h1>{{ $vendor->business_name ?? $vendor->name ?? setting('site_title') }}</h1>
         @endif
 
         <div class="header-title">INVOICE</div>
+        <div class="without-gst-badge">WITHOUT GST</div>
     </div>
 
     <table style="width:100%; margin-bottom:20px;">
@@ -228,6 +225,7 @@
                         <td>
                             {{ $item['product_name'] ?? 'Product' }}
                             @if(!empty($item['product_variation_id']))
+                                {{-- Display attributes for variation products --}}
                                 @if(!empty($item['variation_attributes']))
                                     <br>
                                     <small style="color: #666; font-size: 9px;">
@@ -265,32 +263,15 @@
                 $subtotal = $invoiceData['subtotal'] ?? $total ?? 0;
                 $shipping = $invoiceData['shipping'] ?? 0;
                 $discountAmount = $invoiceData['discount_amount'] ?? 0;
-                $gstType = $invoiceData['gst_type'] ?? 'with_gst';
                 
-                // Handle GST based on type
-                if ($gstType === 'without_gst') {
-                    $taxPercentage = 0;
-                    $taxAmount = 0;
-                } else {
-                    $taxPercentage = $invoiceData['tax_percentage'] ?? 18;
-                    $taxAmount = $invoiceData['tax_amount'] ?? ($subtotal * $taxPercentage / 100);
-                }
-                
-                // Calculate final total
-                $totalAmount = $invoiceData['total'] ?? ($subtotal + $shipping + $taxAmount - $discountAmount);
+                // No tax for without-GST invoices
+                $totalAmount = $invoiceData['total'] ?? ($subtotal + $shipping - $discountAmount);
             @endphp
             
             <tr>
                 <td>Subtotal:</td>
                 <td class="text-end">₹{{ number_format($subtotal, 2) }}</td>
             </tr>
-
-            @if($gstType === 'with_gst')
-            <tr>
-                <td>GST ({{ $taxPercentage }}%):</td>
-                <td class="text-end">₹{{ number_format($taxAmount, 2) }}</td>
-            </tr>
-            @endif
 
             <tr>
                 <td>Shipping:</td>
@@ -305,47 +286,13 @@
             @if(!empty($invoiceData['coupon']) && !empty($invoiceData['coupon_discount']) && $invoiceData['coupon_discount'] > 0)
             <tr>
                 <td>Coupon ({{ $invoiceData['coupon']['code'] }}):</td>
-                <td class="text-end" style="color: green;">-₹{{ number_format($invoiceData['coupon_discount'], 2) }}</td>
+                <td class="text-end text-success">-₹{{ number_format($invoiceData['coupon_discount'], 2) }}</td>
             </tr>
             @endif
 
             <tr class="total-row">
                 <td><strong>Total:</strong></td>
                 <td class="text-end"><strong>₹{{ number_format($totalAmount, 2) }}</strong></td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Payment Information -->
-    <div class="payment-info">
-        <div class="section-title">Payment Information</div>
-        <table style="width:100%;">
-            <tr>
-                <td><strong>Total Amount:</strong></td>
-                <td class="text-end">₹{{ number_format($invoice->total_amount, 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Paid Amount:</strong></td>
-                <td class="text-end" style="color: green;">₹{{ number_format($invoice->paid_amount, 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Pending Amount:</strong></td>
-                <td class="text-end" style="color: {{ $invoice->pending_amount > 0 ? 'red' : 'green' }};">₹{{ number_format($invoice->pending_amount, 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Payment Status:</strong></td>
-                <td class="text-end">
-                    @switch($invoice->payment_status)
-                        @case('paid')
-                            <span style="color: green; font-weight: bold;">PAID</span>
-                            @break
-                        @case('partial')
-                            <span style="color: orange; font-weight: bold;">PARTIAL</span>
-                            @break
-                        @default
-                            <span style="color: red; font-weight: bold;">UNPAID</span>
-                    @endswitch
-                </td>
             </tr>
         </table>
     </div>
@@ -359,6 +306,7 @@
 
     <div class="footer">
         This is a computer-generated document and does not require a signature.<br>
+        This invoice is exempt from GST.<br>
         Thank you for your business!
     </div>
 

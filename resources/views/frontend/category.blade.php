@@ -11,7 +11,11 @@
             <div class="col-12">
                 <nav aria-label="breadcrumb" class="mb-3">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('frontend.home') }}">Home</a></li>
+                        @if(isset($vendor) && $vendor)
+                            <li class="breadcrumb-item"><a href="{{ route('frontend.vendor.home', $vendor->store_slug) }}">{{ $vendor->store_name }}</a></li>
+                        @else
+                            <li class="breadcrumb-item"><a href="{{ route('frontend.home') }}">Home</a></li>
+                        @endif
                         <li class="breadcrumb-item active" aria-current="page">{{ $category->name }}</li>
                     </ol>
                 </nav>
@@ -188,7 +192,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const baseUrl = "{{ route('frontend.category.show', $category->slug) }}";
+    @if(isset($vendor) && $vendor)
+        const baseUrl = "{{ route('frontend.vendor.category.show', ['vendorSlug' => $vendor->store_slug, 'category' => $category->slug]) }}";
+    @else
+        const baseUrl = "{{ route('frontend.category.show', $category->slug) }}";
+    @endif
     
 
     

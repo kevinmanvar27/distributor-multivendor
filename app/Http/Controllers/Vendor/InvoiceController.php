@@ -90,8 +90,9 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get();
         
-        // Get customers
+        // Get customers - only those registered with this vendor
         $customers = User::where('user_role', 'user')
+            ->where('vendor_id', $vendor->id)
             ->orderBy('name')
             ->get();
 
@@ -247,18 +248,29 @@ class InvoiceController extends Controller
         $invoiceData = $invoice->invoice_data;
         if (is_string($invoiceData)) {
             $invoiceData = json_decode($invoiceData, true);
+            // Handle double-encoded JSON
+            if (is_string($invoiceData)) {
+                $invoiceData = json_decode($invoiceData, true);
+            }
+        }
+        
+        if (!is_array($invoiceData)) {
+            $invoiceData = [];
         }
         
         $cartItems = $invoiceData['cart_items'] ?? [];
         $total = $invoiceData['total'] ?? $invoice->total_amount;
         $invoiceDate = $invoiceData['invoice_date'] ?? $invoice->created_at->format('Y-m-d');
         $customer = $invoiceData['customer'] ?? null;
+        $invoiceNumber = $invoice->invoice_number;
 
         $pdf = Pdf::loadView('vendor.invoices.pdf', compact(
             'invoice',
+            'invoiceData',
             'cartItems',
             'total',
             'invoiceDate',
+            'invoiceNumber',
             'customer',
             'vendor'
         ));
@@ -285,5 +297,202 @@ class InvoiceController extends Controller
         $invoice->update(['status' => $request->status]);
 
         return redirect()->back()->with('success', 'Invoice status updated successfully.');
+    }
+
+    /**
+     * Show the form for editing an invoice.
+     */
+    public function edit(ProformaInvoice $invoice)
+    {
+        $vendor = $this->getVendor();
+        
+        // Ensure invoice belongs to vendor
+        if ($invoice->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        
+        // Get vendor's products
+        $products = Product::where('vendor_id', $vendor->id)
+            ->where('status', 'published')
+            ->orderBy('name')
+            ->get();
+        
+        // Get customers
+        $customers = User::where('user_role', 'user')
+            ->where('vendor_id', $vendor->id)
+            ->orderBy('name')
+            ->get();
+        
+        // Get invoice data
+        $invoiceData = $invoice->invoice_data;
+        if (is_string($invoiceData)) {
+            $invoiceData = json_decode($invoiceData, true);
+        }
+        
+        $cartItems = $invoiceData['cart_items'] ?? [];
+
+        return view('vendor.invoices.edit', compact('invoice', 'products', 'customers', 'cartItems'));
+    }
+
+    /**
+     * Update the specified invoice.
+     */
+    public function update(Request $request, ProformaInvoice $invoice)
+    {
+        $vendor = $this->getVendor();
+        
+        // Ensure invoice belongs to vendor
+        if ($invoice->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        
+        // Get existing invoice data
+        $existingInvoiceData = $invoice->invoice_data;
+        if (is_string($existingInvoiceData)) {
+            $existingInvoiceData = json_decode($existingInvoiceData, true);
+        }
+        
+        // Build updated cart items from request
+        $cartItems = [];
+        $subtotal = 0;
+        
+        if ($request->has('items')) {
+            foreach ($request->items as $index => $item) {
+                $existingItem = $existingInvoiceData['cart_items'][$index] ?? [];
+                $price = floatval($item['price'] ?? $existingItem['price'] ?? 0);
+                $quantity = intval($item['quantity'] ?? $existingItem['quantity'] ?? 1);
+                $itemTotal = $price * $quantity;
+                
+                $cartItems[] = array_merge($existingItem, [
+                    'price' => $price,
+                    'quantity' => $quantity,
+                    'total' => $itemTotal,
+                ]);
+                $subtotal += $itemTotal;
+            }
+        } else {
+            $cartItems = $existingInvoiceData['cart_items'] ?? [];
+            foreach ($cartItems as $item) {
+                $subtotal += floatval($item['total'] ?? 0);
+            }
+        }
+        
+        // Get GST type and calculate accordingly
+        $gstType = $request->gst_type ?? $existingInvoiceData['gst_type'] ?? 'with_gst';
+        $taxPercentage = $gstType === 'without_gst' ? 0 : floatval($request->tax_percentage ?? $existingInvoiceData['tax_percentage'] ?? 18);
+        $taxAmount = $gstType === 'without_gst' ? 0 : ($subtotal * $taxPercentage / 100);
+        $shipping = floatval($request->shipping ?? $existingInvoiceData['shipping'] ?? 0);
+        $discountAmount = floatval($request->discount_amount ?? $existingInvoiceData['discount_amount'] ?? 0);
+        $couponDiscount = floatval($existingInvoiceData['coupon_discount'] ?? 0);
+        
+        // Calculate total
+        $total = ($subtotal + $shipping + $taxAmount) - $discountAmount - $couponDiscount;
+        
+        // Build updated invoice data
+        $invoiceData = array_merge($existingInvoiceData, [
+            'cart_items' => $cartItems,
+            'subtotal' => $subtotal,
+            'total' => $total,
+            'gst_type' => $gstType,
+            'tax_percentage' => $taxPercentage,
+            'tax_amount' => $taxAmount,
+            'shipping' => $shipping,
+            'discount_amount' => $discountAmount,
+            'notes' => $request->notes ?? $existingInvoiceData['notes'] ?? '',
+        ]);
+        
+        // Update status if provided
+        $status = $request->status ?? $invoice->status;
+
+        // Update invoice
+        $invoice->update([
+            'status' => $status,
+            'total_amount' => $total,
+            'invoice_data' => $invoiceData,
+        ]);
+
+        return redirect()->route('vendor.invoices.show', $invoice)
+            ->with('success', 'Invoice updated successfully.');
+    }
+
+    /**
+     * Remove an item from the invoice.
+     */
+    public function removeItem(Request $request, ProformaInvoice $invoice)
+    {
+        $vendor = $this->getVendor();
+        
+        // Ensure invoice belongs to vendor
+        if ($invoice->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        
+        $itemIndex = $request->item_index;
+        
+        // Get existing invoice data
+        $invoiceData = $invoice->invoice_data;
+        if (is_string($invoiceData)) {
+            $invoiceData = json_decode($invoiceData, true);
+        }
+        
+        $cartItems = $invoiceData['cart_items'] ?? [];
+        
+        // Remove the item at the specified index
+        if (isset($cartItems[$itemIndex])) {
+            array_splice($cartItems, $itemIndex, 1);
+        }
+        
+        // Recalculate totals
+        $subtotal = 0;
+        foreach ($cartItems as $item) {
+            $subtotal += floatval($item['total'] ?? 0);
+        }
+        
+        $gstType = $invoiceData['gst_type'] ?? 'with_gst';
+        $taxPercentage = $gstType === 'without_gst' ? 0 : floatval($invoiceData['tax_percentage'] ?? 18);
+        $taxAmount = $gstType === 'without_gst' ? 0 : ($subtotal * $taxPercentage / 100);
+        $shipping = floatval($invoiceData['shipping'] ?? 0);
+        $discountAmount = floatval($invoiceData['discount_amount'] ?? 0);
+        $couponDiscount = floatval($invoiceData['coupon_discount'] ?? 0);
+        
+        $total = ($subtotal + $shipping + $taxAmount) - $discountAmount - $couponDiscount;
+        
+        // Update invoice data
+        $invoiceData['cart_items'] = $cartItems;
+        $invoiceData['subtotal'] = $subtotal;
+        $invoiceData['total'] = $total;
+        $invoiceData['tax_amount'] = $taxAmount;
+        
+        // Update invoice
+        $invoice->update([
+            'total_amount' => $total,
+            'invoice_data' => $invoiceData,
+        ]);
+
+        return redirect()->route('vendor.invoices.show', $invoice)
+            ->with('success', 'Item removed from invoice successfully.');
+    }
+
+    /**
+     * Delete the specified invoice.
+     */
+    public function destroy(ProformaInvoice $invoice)
+    {
+        $vendor = $this->getVendor();
+        
+        // Ensure invoice belongs to vendor
+        if ($invoice->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+        
+        // Only allow deletion of draft invoices
+        if ($invoice->status !== 'Draft') {
+            return redirect()->back()->with('error', 'Only draft invoices can be deleted.');
+        }
+        
+        $invoice->delete();
+
+        return redirect()->route('vendor.invoices.index')
+            ->with('success', 'Invoice deleted successfully.');
     }
 }

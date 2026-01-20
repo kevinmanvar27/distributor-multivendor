@@ -43,25 +43,46 @@
                             </span>
                         @endif
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm mt-2 notification-dropdown" aria-labelledby="notificationsDropdown">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm mt-2 notification-dropdown" aria-labelledby="notificationsDropdown" style="min-width: 350px;">
                         <li><h6 class="dropdown-header fw-semibold">Notifications</h6></li>
                         
                         @forelse(auth()->user()->notifications->take(5) as $notification)
-                            <li>
-                                <a class="dropdown-item d-flex align-items-start py-2 notification-item" href="#">
+                            <li class="notification-list-item">
+                                <a class="dropdown-item d-flex align-items-start py-2 notification-item {{ $notification->read ? '' : 'bg-light' }}" 
+                                   href="#" 
+                                   data-notification-id="{{ $notification->id }}" 
+                                   data-notification-type="{{ $notification->type }}" 
+                                   data-notification-data="{{ $notification->data }}">
                                     <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                        <i class="fas fa-bell text-info"></i>
+                                        @php
+                                            $notificationData = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
+                                        @endphp
+                                        
+                                        @if($notification->type === 'proforma_invoice')
+                                            <i class="fas fa-file-invoice text-primary"></i>
+                                        @elseif($notification->type === 'without_gst_invoice')
+                                            <i class="fas fa-file-alt text-secondary"></i>
+                                        @elseif($notification->type === 'lead')
+                                            <i class="fas fa-user-plus text-success"></i>
+                                        @elseif($notification->type === 'product')
+                                            <i class="fas fa-box text-info"></i>
+                                        @else
+                                            <i class="fas fa-bell text-info"></i>
+                                        @endif
                                     </div>
-                                    <div>
+                                    <div class="flex-grow-1">
                                         <div class="fw-medium">{{ $notification->title ?? 'Notification' }}</div>
                                         <small class="text-secondary">{{ $notification->message ?? '' }}</small>
                                         <br>
                                         <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                                     </div>
+                                    @if(!$notification->read)
+                                        <span class="badge bg-primary rounded-pill ms-2">New</span>
+                                    @endif
                                 </a>
                             </li>
                         @empty
-                            <li>
+                            <li class="no-notifications-item">
                                 <a class="dropdown-item d-flex align-items-center py-2" href="#">
                                     <div class="text-center w-100">
                                         <div class="fw-medium">No notifications</div>
@@ -72,7 +93,7 @@
                         @endforelse
                         
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-center fw-medium" href="#">Mark all as read</a></li>
+                        <li><a class="dropdown-item text-center fw-medium text-danger" href="#" id="clearAllNotifications">Clear all notifications</a></li>
                     </ul>
                 </div>
                 
@@ -102,3 +123,179 @@
         </div>
     </div>
 </header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationDropdown = document.querySelector('.notification-dropdown');
+    const clearAllBtn = document.getElementById('clearAllNotifications');
+    const notificationItems = document.querySelectorAll('.notification-item');
+    
+    // Handle individual notification clicks (navigation + delete notification)
+    notificationItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const notificationType = this.getAttribute('data-notification-type');
+            const notificationData = this.getAttribute('data-notification-data');
+            const notificationId = this.getAttribute('data-notification-id');
+            const listItem = this.closest('.notification-list-item');
+            
+            // Determine redirect URL based on notification type
+            let redirectUrl = null;
+            
+            if (notificationType === 'proforma_invoice') {
+                try {
+                    const data = JSON.parse(notificationData);
+                    if (data.invoice_id) {
+                        redirectUrl = `/vendor/invoices/${data.invoice_id}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing notification data:', e);
+                }
+            } else if (notificationType === 'without_gst_invoice') {
+                try {
+                    const data = JSON.parse(notificationData);
+                    if (data.invoice_id) {
+                        redirectUrl = `/vendor/invoices-black/${data.invoice_id}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing notification data:', e);
+                }
+            } else if (notificationType === 'lead') {
+                try {
+                    const data = JSON.parse(notificationData);
+                    if (data.lead_id) {
+                        redirectUrl = `/vendor/leads/${data.lead_id}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing notification data:', e);
+                }
+            } else if (notificationType === 'product') {
+                try {
+                    const data = JSON.parse(notificationData);
+                    if (data.product_id) {
+                        redirectUrl = `/vendor/products/${data.product_id}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing notification data:', e);
+                }
+            }
+            
+            // Delete notification and redirect
+            deleteNotification(notificationId, listItem, redirectUrl);
+        });
+    });
+    
+    // Clear all notifications (delete them)
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            fetch('/vendor/notifications', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update notification count to 0
+                    updateNotificationCount(0);
+                    // Remove all notification items from DOM
+                    document.querySelectorAll('.notification-list-item').forEach(item => {
+                        item.remove();
+                    });
+                    // Show "no notifications" message
+                    showNoNotificationsMessage();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    }
+    
+    // Function to delete a specific notification
+    function deleteNotification(notificationId, listItem, redirectUrl = null) {
+        fetch(`/vendor/notifications/${notificationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update notification count
+                updateNotificationCount(data.unread_count);
+                // Remove the notification item from DOM
+                if (listItem) {
+                    listItem.remove();
+                }
+                // Check if there are any notifications left
+                const remainingItems = document.querySelectorAll('.notification-list-item');
+                if (remainingItems.length === 0) {
+                    showNoNotificationsMessage();
+                }
+                
+                // Redirect if URL provided
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Still redirect even if deletion fails
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        });
+    }
+    
+    // Function to show "no notifications" message
+    function showNoNotificationsMessage() {
+        const dropdown = document.querySelector('.notification-dropdown');
+        const divider = dropdown.querySelector('.dropdown-divider');
+        
+        // Check if no-notifications message already exists
+        if (!dropdown.querySelector('.no-notifications-item')) {
+            const noNotificationsHtml = `
+                <li class="no-notifications-item">
+                    <a class="dropdown-item d-flex align-items-center py-2" href="#">
+                        <div class="text-center w-100">
+                            <div class="fw-medium">No notifications</div>
+                            <small class="text-secondary">You're all caught up</small>
+                        </div>
+                    </a>
+                </li>
+            `;
+            if (divider) {
+                divider.closest('li').insertAdjacentHTML('beforebegin', noNotificationsHtml);
+            }
+        }
+    }
+    
+    // Function to update notification count
+    function updateNotificationCount(count) {
+        const countElement = document.querySelector('#notificationsDropdown .notification-count');
+        if (count > 0) {
+            if (countElement) {
+                countElement.textContent = count;
+            } else {
+                const badge = document.createElement('span');
+                badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-count';
+                badge.textContent = count;
+                document.querySelector('#notificationsDropdown').appendChild(badge);
+            }
+        } else {
+            if (countElement) {
+                countElement.remove();
+            }
+        }
+    }
+});
+</script>

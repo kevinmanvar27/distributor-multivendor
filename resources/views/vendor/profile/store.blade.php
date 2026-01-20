@@ -46,9 +46,9 @@
                                 <div class="card-body">
                                     <div class="mb-4">
                                         <label for="banner" class="form-label fw-bold">Store Banner</label>
-                                        @if($vendor && $vendor->store_banner)
+                                        @if($vendor && $vendor->store_banner_url)
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/vendor/' . $vendor->store_banner) }}" alt="Store Banner" class="img-fluid rounded" style="max-height: 150px;">
+                                                <img src="{{ $vendor->store_banner_url }}" alt="Store Banner" class="img-fluid rounded" style="max-height: 150px;">
                                             </div>
                                         @endif
                                         <input type="file" class="form-control" id="banner" name="banner" accept="image/*">

@@ -86,8 +86,8 @@
                                                     <td class="fw-bold">{{ $vendor->id }}</td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            @if($vendor->store_logo)
-                                                                <img src="{{ asset('storage/' . $vendor->store_logo) }}" class="rounded-circle me-3" width="40" height="40" alt="{{ $vendor->store_name }}">
+                                                            @if($vendor->store_logo_url)
+                                                                <img src="{{ $vendor->store_logo_url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ $vendor->store_name }}" style="object-fit: cover;">
                                                             @else
                                                                 <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                                                                     <span class="text-white fw-bold">{{ strtoupper(substr($vendor->store_name, 0, 1)) }}</span>

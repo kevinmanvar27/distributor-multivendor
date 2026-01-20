@@ -191,8 +191,15 @@ class Vendor extends Model
      */
     public function getStoreLogoUrlAttribute()
     {
-        if ($this->store_logo && \Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->store_logo)) {
-            return asset('storage/vendor/' . $this->store_logo);
+        if ($this->store_logo) {
+            // Check in vendor root folder
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->store_logo)) {
+                return asset('storage/vendor/' . $this->store_logo);
+            }
+            // Check in vendor-specific subfolder
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->id . '/' . $this->store_logo)) {
+                return asset('storage/vendor/' . $this->id . '/' . $this->store_logo);
+            }
         }
         
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->store_name) . '&background=0D8ABC&color=fff&size=200';
@@ -203,8 +210,15 @@ class Vendor extends Model
      */
     public function getStoreBannerUrlAttribute()
     {
-        if ($this->store_banner && \Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->store_banner)) {
-            return asset('storage/vendor/' . $this->store_banner);
+        if ($this->store_banner) {
+            // Check in vendor root folder
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->store_banner)) {
+                return asset('storage/vendor/' . $this->store_banner);
+            }
+            // Check in vendor-specific subfolder
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $this->id . '/' . $this->store_banner)) {
+                return asset('storage/vendor/' . $this->id . '/' . $this->store_banner);
+            }
         }
         
         return null;
