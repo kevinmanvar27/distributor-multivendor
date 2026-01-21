@@ -207,10 +207,10 @@
                                                        class="btn btn-outline-primary rounded-start-pill px-2 px-md-3">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ route('vendor.invoices.print', $invoice) }}" 
+                                                    <!-- <a href="{{ route('vendor.invoices.print', $invoice) }}" 
                                                        class="btn btn-outline-secondary px-2 px-md-3" target="_blank">
                                                         <i class="fas fa-print"></i>
-                                                    </a>
+                                                    </a> -->
                                                     <a href="{{ route('vendor.invoices.download', $invoice) }}" 
                                                        class="btn btn-outline-success rounded-end-pill px-2 px-md-3">
                                                         <i class="fas fa-download"></i>

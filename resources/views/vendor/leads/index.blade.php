@@ -21,6 +21,24 @@
                                         <p class="mb-0 text-muted small">Manage your leads</p>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2">
+                                        <a href="{{ route('vendor.leads.reminders') }}" class="btn btn-sm btn-md-normal btn-outline-warning rounded-pill px-3 px-md-4">
+                                            <i class="fas fa-bell me-1 me-md-2"></i><span class="d-none d-sm-inline">Reminders</span>
+                                            @php
+                                                $reminderVendorId = null;
+                                                if (Auth::user()->vendor) {
+                                                    $reminderVendorId = Auth::user()->vendor->id;
+                                                } elseif (Auth::user()->vendorStaff && Auth::user()->vendorStaff->vendor) {
+                                                    $reminderVendorId = Auth::user()->vendorStaff->vendor->id;
+                                                }
+                                                $dueRemindersCount = $reminderVendorId ? \App\Models\LeadReminder::where('vendor_id', $reminderVendorId)
+                                                    ->where('status', 'pending')
+                                                    ->where('reminder_at', '<=', now())
+                                                    ->count() : 0;
+                                            @endphp
+                                            @if($dueRemindersCount > 0)
+                                                <span class="badge bg-danger rounded-pill ms-1">{{ $dueRemindersCount }}</span>
+                                            @endif
+                                        </a>
                                         <a href="{{ route('vendor.leads.trashed') }}" class="btn btn-sm btn-md-normal btn-outline-secondary rounded-pill px-3 px-md-4">
                                             <i class="fas fa-trash-alt me-1 me-md-2"></i><span class="d-none d-sm-inline">Trashed</span>
                                         </a>
@@ -84,6 +102,7 @@
                                                 <th>Contact Number</th>
                                                 <th>Note</th>
                                                 <th>Status</th>
+                                                <th>Reminder</th>
                                                 <th>Created At</th>
                                                 <th>Actions</th>
                                             </tr>
@@ -94,7 +113,9 @@
                                             <tr>
                                                 <td>{{ $sr++ }}</td>
                                                 <td>
-                                                    <div class="fw-medium">{{ $lead->name }}</div>
+                                                    <div class="fw-medium">
+                                                        <a href="{{ route('vendor.leads.show', $lead) }}" class="text-decoration-none">{{ $lead->name }}</a>
+                                                    </div>
                                                 </td>
                                                 <td>{{ $lead->contact_number }}</td>
                                                 <td>{{ Str::limit($lead->note, 50) }}</td>
@@ -103,16 +124,33 @@
                                                         {{ $lead->status_label }}
                                                     </span>
                                                 </td>
+                                                <td>
+                                                    @php
+                                                        $nextReminder = $lead->nextReminder;
+                                                    @endphp
+                                                    @if($nextReminder)
+                                                        <span class="badge {{ $nextReminder->is_overdue ? 'bg-danger' : 'bg-warning' }} rounded-pill px-2 py-1" 
+                                                              title="{{ $nextReminder->title }} - {{ $nextReminder->reminder_at->format('M d, Y h:i A') }}">
+                                                            <i class="fas fa-bell me-1"></i>
+                                                            {{ $nextReminder->is_overdue ? 'Overdue' : $nextReminder->reminder_at->format('M d') }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
                                                 <td>{{ $lead->created_at->format('M d, Y') }}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <a href="{{ route('vendor.leads.edit', $lead) }}" class="btn btn-outline-primary rounded-start-pill px-3">
+                                                        <a href="{{ route('vendor.leads.show', $lead) }}" class="btn btn-outline-info rounded-start-pill px-3" title="View">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="{{ route('vendor.leads.edit', $lead) }}" class="btn btn-outline-primary px-3" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
                                                         <form action="{{ route('vendor.leads.destroy', $lead) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger rounded-end-pill px-3" onclick="return confirm('Are you sure you want to delete this lead?')">
+                                                            <button type="submit" class="btn btn-outline-danger rounded-end-pill px-3" onclick="return confirm('Are you sure you want to delete this lead?')" title="Delete">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         </form>
@@ -152,9 +190,9 @@
             "info": true,
             "paging": true,
             "columnDefs": [
-                { "orderable": false, "targets": [6] }
+                { "orderable": false, "targets": [7] }
             ],
-            "order": [[5, "desc"]],
+            "order": [[6, "desc"]],
             "language": {
                 "emptyTable": '<div class="text-center py-4"><div class="text-muted"><i class="fas fa-user-tie fa-2x mb-3 d-block"></i><p class="mb-0">No leads found</p></div></div>'
             }

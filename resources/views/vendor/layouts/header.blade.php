@@ -33,6 +33,161 @@
             </div>
             
             <div class="d-flex align-items-center">
+                <!-- Lead Reminders -->
+                @php
+                    $vendorId = null;
+                    if (Auth::check()) {
+                        if (Auth::user()->vendor) {
+                            $vendorId = Auth::user()->vendor->id;
+                        } elseif (Auth::user()->vendorStaff && Auth::user()->vendorStaff->vendor) {
+                            $vendorId = Auth::user()->vendorStaff->vendor->id;
+                        }
+                    }
+                    
+                    $dueReminders = collect();
+                    $upcomingReminders = collect();
+                    $dueRemindersCount = 0;
+                    $totalPendingCount = 0;
+                    
+                    if ($vendorId) {
+                        // Get overdue reminders
+                        $dueReminders = \App\Models\LeadReminder::where('vendor_id', $vendorId)
+                            ->where('status', 'pending')
+                            ->where('reminder_at', '<=', now())
+                            ->whereHas('lead')
+                            ->with(['lead' => function($query) {
+                                $query->withTrashed();
+                            }])
+                            ->orderBy('reminder_at', 'asc')
+                            ->limit(5)
+                            ->get();
+                        $dueRemindersCount = $dueReminders->count();
+                        
+                        // Get upcoming reminders (next 24 hours)
+                        $upcomingReminders = \App\Models\LeadReminder::where('vendor_id', $vendorId)
+                            ->where('status', 'pending')
+                            ->where('reminder_at', '>', now())
+                            ->where('reminder_at', '<=', now()->addHours(24))
+                            ->whereHas('lead')
+                            ->with(['lead' => function($query) {
+                                $query->withTrashed();
+                            }])
+                            ->orderBy('reminder_at', 'asc')
+                            ->limit(3)
+                            ->get();
+                            
+                        $totalPendingCount = \App\Models\LeadReminder::where('vendor_id', $vendorId)
+                            ->where('status', 'pending')
+                            ->count();
+                    }
+                @endphp
+                @if($vendorId)
+                <div class="dropdown me-2">
+                    <button class="btn btn-outline-{{ $dueRemindersCount > 0 ? 'danger' : ($upcomingReminders->count() > 0 ? 'warning' : 'secondary') }} position-relative rounded-circle" type="button" id="remindersDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Lead Reminders">
+                        <i class="fas fa-calendar-check {{ $dueRemindersCount > 0 ? 'fa-shake' : '' }}"></i>
+                        @if($dueRemindersCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ $dueRemindersCount }}
+                            </span>
+                        @elseif($upcomingReminders->count() > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+                                {{ $upcomingReminders->count() }}
+                            </span>
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow mt-2 p-0" aria-labelledby="remindersDropdown" style="min-width: 380px; max-height: 450px; overflow-y: auto;">
+                        <!-- Header -->
+                        <li class="bg-light border-bottom">
+                            <div class="dropdown-header py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-dark"><i class="fas fa-calendar-check me-2"></i>Lead Reminders</span>
+                                    @if($totalPendingCount > 0)
+                                        <span class="badge bg-primary rounded-pill">{{ $totalPendingCount }} pending</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </li>
+                        
+                        @if($dueReminders->count() > 0)
+                            <!-- Overdue Section -->
+                            <li class="bg-danger-subtle">
+                                <div class="dropdown-header py-1 small fw-semibold text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>OVERDUE
+                                </div>
+                            </li>
+                            @foreach($dueReminders as $reminder)
+                                @if($reminder->lead)
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-start py-2 border-bottom bg-danger-subtle bg-opacity-25" href="{{ route('vendor.leads.show', $reminder->lead_id) }}">
+                                        <div class="rounded-circle bg-danger text-white me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                                            <i class="fas fa-exclamation"></i>
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="fw-semibold text-truncate text-danger">{{ $reminder->title }}</div>
+                                            <small class="text-secondary d-block text-truncate">
+                                                <i class="fas fa-user me-1"></i>{{ $reminder->lead->name }}
+                                            </small>
+                                            <small class="text-danger fw-medium">
+                                                <i class="fas fa-clock me-1"></i>{{ $reminder->reminder_at->diffForHumans() }}
+                                            </small>
+                                        </div>
+                                    </a>
+                                </li>
+                                @endif
+                            @endforeach
+                        @endif
+                        
+                        @if($upcomingReminders->count() > 0)
+                            <!-- Upcoming Section -->
+                            <li class="bg-warning-subtle">
+                                <div class="dropdown-header py-1 small fw-semibold text-warning-emphasis">
+                                    <i class="fas fa-clock me-1"></i>UPCOMING (24h)
+                                </div>
+                            </li>
+                            @foreach($upcomingReminders as $reminder)
+                                @if($reminder->lead)
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-start py-2 border-bottom" href="{{ route('vendor.leads.show', $reminder->lead_id) }}">
+                                        <div class="rounded-circle bg-warning text-dark me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px;">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="fw-medium text-truncate">{{ $reminder->title }}</div>
+                                            <small class="text-secondary d-block text-truncate">
+                                                <i class="fas fa-user me-1"></i>{{ $reminder->lead->name }}
+                                            </small>
+                                            <small class="text-warning-emphasis">
+                                                <i class="fas fa-calendar me-1"></i>{{ $reminder->reminder_at->format('M d, h:i A') }}
+                                            </small>
+                                        </div>
+                                    </a>
+                                </li>
+                                @endif
+                            @endforeach
+                        @endif
+                        
+                        @if($dueReminders->count() == 0 && $upcomingReminders->count() == 0)
+                            <li>
+                                <div class="dropdown-item d-flex align-items-center py-4">
+                                    <div class="text-center w-100">
+                                        <i class="fas fa-check-circle text-success fa-3x mb-2"></i>
+                                        <div class="fw-medium">No pending reminders</div>
+                                        <small class="text-secondary">You're all caught up!</small>
+                                    </div>
+                                </div>
+                            </li>
+                        @endif
+                        
+                        <!-- Footer -->
+                        <li class="bg-light border-top sticky-bottom">
+                            <a class="dropdown-item text-center fw-medium text-primary py-2" href="{{ route('vendor.leads.reminders') }}">
+                                <i class="fas fa-list me-1"></i>View all reminders
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                @endif
+                
                 <!-- Notifications -->
                 <div class="dropdown me-2">
                     <button class="btn btn-outline-secondary position-relative rounded-circle" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">

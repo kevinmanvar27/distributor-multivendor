@@ -117,12 +117,21 @@ Route::prefix('vendor')->name('vendor.')->middleware(['auth', 'vendor'])->group(
     Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
     Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
     Route::get('leads/trashed', [LeadController::class, 'trashed'])->name('leads.trashed');
+    Route::get('leads/reminders', [LeadController::class, 'reminders'])->name('leads.reminders');
+    Route::get('leads/reminders/due', [LeadController::class, 'dueReminders'])->name('leads.reminders.due');
     Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
     Route::put('leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
     Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
     Route::post('leads/{id}/restore', [LeadController::class, 'restore'])->name('leads.restore');
     Route::delete('leads/{id}/force-delete', [LeadController::class, 'forceDelete'])->name('leads.force-delete');
+    
+    // Lead Reminder Management
+    Route::post('leads/{lead}/reminders', [LeadController::class, 'storeReminder'])->name('leads.reminders.store');
+    Route::put('leads/reminders/{reminder}', [LeadController::class, 'updateReminder'])->name('leads.reminders.update');
+    Route::post('leads/reminders/{reminder}/complete', [LeadController::class, 'completeReminder'])->name('leads.reminders.complete');
+    Route::post('leads/reminders/{reminder}/dismiss', [LeadController::class, 'dismissReminder'])->name('leads.reminders.dismiss');
+    Route::delete('leads/reminders/{reminder}', [LeadController::class, 'destroyReminder'])->name('leads.reminders.destroy');
     
     // Coupon Management
     Route::get('coupons', [CouponController::class, 'index'])->name('coupons.index');

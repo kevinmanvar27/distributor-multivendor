@@ -43,6 +43,32 @@ class Lead extends Model
     }
 
     /**
+     * Get the reminders for the lead.
+     */
+    public function reminders()
+    {
+        return $this->hasMany(LeadReminder::class);
+    }
+
+    /**
+     * Get the pending reminders for the lead.
+     */
+    public function pendingReminders()
+    {
+        return $this->hasMany(LeadReminder::class)->where('status', 'pending');
+    }
+
+    /**
+     * Get the next reminder for the lead.
+     */
+    public function nextReminder()
+    {
+        return $this->hasOne(LeadReminder::class)
+                    ->where('status', 'pending')
+                    ->orderBy('reminder_at', 'asc');
+    }
+
+    /**
      * Get the status label with proper formatting.
      *
      * @return string

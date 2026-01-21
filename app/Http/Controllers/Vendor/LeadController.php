@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lead;
+use App\Models\LeadReminder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,7 +25,8 @@ class LeadController extends Controller
     {
         $vendor = $this->getVendor();
         
-        $query = Lead::where('vendor_id', $vendor->id);
+        $query = Lead::where('vendor_id', $vendor->id)
+            ->with('nextReminder');
 
         // Status filter
         if ($request->filled('status')) {
@@ -94,6 +96,9 @@ class LeadController extends Controller
         if ($lead->vendor_id !== $vendor->id) {
             abort(403, 'Unauthorized access to this lead.');
         }
+        
+        // Eager load relationships
+        $lead->load(['reminders', 'pendingReminders', 'nextReminder']);
         
         return view('vendor.leads.show', compact('lead'));
     }
@@ -215,5 +220,180 @@ class LeadController extends Controller
 
         return redirect()->route('vendor.leads.trashed')
             ->with('success', 'Lead permanently deleted.');
+    }
+
+    /**
+     * Display all reminders.
+     */
+    public function reminders(Request $request)
+    {
+        $vendor = $this->getVendor();
+        
+        $query = LeadReminder::where('vendor_id', $vendor->id)
+            ->with('lead');
+
+        // Status filter
+        if ($request->filled('status')) {
+            if ($request->status === 'overdue') {
+                $query->where('status', 'pending')
+                      ->where('reminder_at', '<', now());
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+
+        // Date range filter
+        if ($request->filled('from_date')) {
+            $query->whereDate('reminder_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('reminder_at', '<=', $request->to_date);
+        }
+
+        $reminders = $query->orderBy('reminder_at', 'asc')->paginate(15)->withQueryString();
+        
+        // Count due reminders for badge
+        $dueCount = LeadReminder::where('vendor_id', $vendor->id)
+            ->where('status', 'pending')
+            ->where('reminder_at', '<=', now())
+            ->count();
+
+        return view('vendor.leads.reminders', compact('reminders', 'dueCount'));
+    }
+
+    /**
+     * Get due reminders count (for AJAX).
+     */
+    public function dueReminders()
+    {
+        $vendor = $this->getVendor();
+        
+        $dueReminders = LeadReminder::where('vendor_id', $vendor->id)
+            ->where('status', 'pending')
+            ->where('reminder_at', '<=', now())
+            ->with('lead')
+            ->orderBy('reminder_at', 'asc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'count' => $dueReminders->count(),
+            'reminders' => $dueReminders->map(function ($reminder) {
+                return [
+                    'id' => $reminder->id,
+                    'title' => $reminder->title,
+                    'lead_id' => $reminder->lead_id,
+                    'lead_name' => $reminder->lead->name,
+                    'reminder_at' => $reminder->reminder_at->format('M d, Y h:i A'),
+                    'is_overdue' => $reminder->is_overdue,
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Store a new reminder for a lead.
+     */
+    public function storeReminder(Request $request, Lead $lead)
+    {
+        $vendor = $this->getVendor();
+        
+        if ($lead->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this lead.');
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'reminder_at' => 'required|date|after:now',
+        ]);
+
+        $validated['lead_id'] = $lead->id;
+        $validated['vendor_id'] = $vendor->id;
+
+        LeadReminder::create($validated);
+
+        return redirect()->back()
+            ->with('success', 'Reminder created successfully.');
+    }
+
+    /**
+     * Update a reminder.
+     */
+    public function updateReminder(Request $request, LeadReminder $reminder)
+    {
+        $vendor = $this->getVendor();
+        
+        if ($reminder->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this reminder.');
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'reminder_at' => 'required|date',
+        ]);
+
+        $reminder->update($validated);
+
+        return redirect()->back()
+            ->with('success', 'Reminder updated successfully.');
+    }
+
+    /**
+     * Mark a reminder as completed.
+     */
+    public function completeReminder(LeadReminder $reminder)
+    {
+        $vendor = $this->getVendor();
+        
+        if ($reminder->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this reminder.');
+        }
+
+        $reminder->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Reminder marked as completed.');
+    }
+
+    /**
+     * Dismiss a reminder.
+     */
+    public function dismissReminder(LeadReminder $reminder)
+    {
+        $vendor = $this->getVendor();
+        
+        if ($reminder->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this reminder.');
+        }
+
+        $reminder->update([
+            'status' => 'dismissed',
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Reminder dismissed.');
+    }
+
+    /**
+     * Delete a reminder.
+     */
+    public function destroyReminder(LeadReminder $reminder)
+    {
+        $vendor = $this->getVendor();
+        
+        if ($reminder->vendor_id !== $vendor->id) {
+            abort(403, 'Unauthorized access to this reminder.');
+        }
+
+        $reminder->delete();
+
+        return redirect()->back()
+            ->with('success', 'Reminder deleted successfully.');
     }
 }
