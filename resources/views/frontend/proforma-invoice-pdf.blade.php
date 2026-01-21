@@ -122,6 +122,24 @@
             font-size: 9px;
             color: #777;
         }
+
+        /* Store Logo */
+        .store-logo {
+            max-width: 120px;
+            max-height: 50px;
+            margin-bottom: 5px;
+        }
+
+        /* Store Badge */
+        .store-badge {
+            background: <?php echo e(setting('theme_color', '#FF6B00')) ?>;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
@@ -130,13 +148,17 @@
 <div class="container">
 
     <div class="header">
-        @if(setting('header_logo'))
+        @if(isset($store) && $store && !empty($store['store_logo']))
+            {{-- Show Store Logo if vendor invoice --}}
+            <img src="{{ public_path('storage/' . $store['store_logo']) }}" class="header-logo">
+            <div class="header-title">INVOICE</div>
+        @elseif(setting('header_logo'))
             <img src="{{ public_path('storage/' . setting('header_logo')) }}" class="header-logo">
+            <div class="header-title">INVOICE</div>
         @else
-            <h1>{{ $siteTitle }}</h1>
+            <h1>{{ isset($store) && $store ? $store['store_name'] : $siteTitle }}</h1>
+            <div class="header-title">INVOICE</div>
         @endif
-
-        <div class="header-title">INVOICE</div>
     </div>
 
     <table style="width:100%; margin-bottom:20px;">
@@ -144,10 +166,30 @@
             <td style="width:50%; vertical-align:top; padding-right:15px; border: none;">
                 <div class="section-title">From</div>
 
-                <div><strong>Company:</strong> {{ $siteTitle }}</div>
-                <div><strong>Address:</strong> {{ $companyAddress }}</div>
-                <div><strong>Email:</strong> {{ $companyEmail }}</div>
-                <div><strong>Phone:</strong> {{ $companyPhone }}</div>
+                @if(isset($store) && $store)
+                    {{-- Vendor/Store Details --}}
+                    <div><strong>Store:</strong> {{ $store['store_name'] }}</div>
+                    @if(!empty($store['full_address']))
+                        <div><strong>Address:</strong> {{ $store['full_address'] }}</div>
+                    @elseif(!empty($store['business_address']))
+                        <div><strong>Address:</strong> {{ $store['business_address'] }}</div>
+                    @endif
+                    @if(!empty($store['business_email']))
+                        <div><strong>Email:</strong> {{ $store['business_email'] }}</div>
+                    @endif
+                    @if(!empty($store['business_phone']))
+                        <div><strong>Phone:</strong> {{ $store['business_phone'] }}</div>
+                    @endif
+                    @if(!empty($store['gst_number']))
+                        <div><strong>GST No:</strong> {{ $store['gst_number'] }}</div>
+                    @endif
+                @else
+                    {{-- Default Company Details --}}
+                    <div><strong>Company:</strong> {{ $siteTitle }}</div>
+                    <div><strong>Address:</strong> {{ $companyAddress }}</div>
+                    <div><strong>Email:</strong> {{ $companyEmail }}</div>
+                    <div><strong>Phone:</strong> {{ $companyPhone }}</div>
+                @endif
             </td>
 
             <td style="width:50%; vertical-align:top; padding-left:15px; border: none;">
@@ -279,6 +321,9 @@
     </div>
 
     <div class="footer">
+        @if(isset($store) && $store)
+            Invoice from {{ $store['store_name'] }}<br>
+        @endif
         This is a computer-generated document and does not require a signature.<br>
         Thank you for your business!
     </div>

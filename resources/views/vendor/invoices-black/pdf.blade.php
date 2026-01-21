@@ -138,10 +138,34 @@
 <div class="container">
 
     <div class="header">
-        @if($vendor->logo)
-            <img src="{{ public_path('storage/' . $vendor->logo) }}" class="header-logo">
+        @php
+            $logoPath = null;
+            if ($vendor->store_logo) {
+                // Check in vendor root folder
+                if (file_exists(public_path('storage/vendor/' . $vendor->store_logo))) {
+                    $logoPath = public_path('storage/vendor/' . $vendor->store_logo);
+                }
+                // Check in vendor-specific subfolder
+                elseif (file_exists(public_path('storage/vendor/' . $vendor->id . '/' . $vendor->store_logo))) {
+                    $logoPath = public_path('storage/vendor/' . $vendor->id . '/' . $vendor->store_logo);
+                }
+                // Check direct path
+                elseif (file_exists(public_path('storage/' . $vendor->store_logo))) {
+                    $logoPath = public_path('storage/' . $vendor->store_logo);
+                }
+            }
+            // Fallback to site header logo
+            if (!$logoPath && setting('header_logo')) {
+                if (file_exists(public_path('storage/' . setting('header_logo')))) {
+                    $logoPath = public_path('storage/' . setting('header_logo'));
+                }
+            }
+        @endphp
+        
+        @if($logoPath)
+            <img src="{{ $logoPath }}" class="header-logo">
         @else
-            <h1>{{ $vendor->business_name ?? $vendor->name ?? setting('site_title') }}</h1>
+            <h1>{{ $vendor->store_name ?? $vendor->business_name ?? $vendor->name ?? setting('site_title') }}</h1>
         @endif
 
         <div class="header-title">INVOICE</div>
@@ -153,15 +177,24 @@
             <td style="width:50%; vertical-align:top; padding-right:15px; border: none;">
                 <div class="section-title">From</div>
 
-                <div><strong>Company:</strong> {{ $vendor->business_name ?? $vendor->name ?? setting('site_title') }}</div>
-                @if($vendor->address)
+                <div><strong>Company:</strong> {{ $vendor->store_name ?? $vendor->business_name ?? $vendor->name ?? setting('site_title') }}</div>
+                @if($vendor->business_address)
+                    <div><strong>Address:</strong> {{ $vendor->business_address }}@if($vendor->city), {{ $vendor->city }}@endif @if($vendor->state), {{ $vendor->state }}@endif @if($vendor->postal_code) - {{ $vendor->postal_code }}@endif</div>
+                @elseif($vendor->address)
                     <div><strong>Address:</strong> {{ $vendor->address }}</div>
                 @endif
-                @if($vendor->email)
+                @if($vendor->business_email)
+                    <div><strong>Email:</strong> {{ $vendor->business_email }}</div>
+                @elseif($vendor->email)
                     <div><strong>Email:</strong> {{ $vendor->email }}</div>
                 @endif
-                @if($vendor->phone)
+                @if($vendor->business_phone)
+                    <div><strong>Phone:</strong> {{ $vendor->business_phone }}</div>
+                @elseif($vendor->phone)
                     <div><strong>Phone:</strong> {{ $vendor->phone }}</div>
+                @endif
+                @if($vendor->gst_number)
+                    <div><strong>GST No:</strong> {{ $vendor->gst_number }}</div>
                 @endif
             </td>
 

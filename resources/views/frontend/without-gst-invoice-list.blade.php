@@ -887,27 +887,48 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderInvoiceDetails(data) {
         const invoice = data.invoice;
         const invoiceData = data.data || {};
+        const storeData = data.store || null;
         
         console.log('Rendering invoice:', invoice);
         console.log('Invoice data:', invoiceData);
+        console.log('Store data:', storeData);
         
         const siteTitle = document.querySelector('meta[name="site-title"]')?.getAttribute('content') || '{{ setting("site_title", "Frontend App") }}';
         const companyAddress = document.querySelector('meta[name="company-address"]')?.getAttribute('content') || '{{ setting("company_address", "Company Address") }}';
         const companyEmail = document.querySelector('meta[name="company-email"]')?.getAttribute('content') || '{{ setting("company_email", "company@example.com") }}';
         const companyPhone = document.querySelector('meta[name="company-phone"]')?.getAttribute('content') || '{{ setting("company_phone", "+1 (555) 123-4567") }}';
         
+        // Build "From" section - use store details if available, otherwise use site settings
+        let fromHtml = '';
+        if (storeData) {
+            fromHtml = `
+                ${storeData.store_logo ? `<img src="${storeData.store_logo}" alt="${storeData.store_name}" style="max-height: 50px; max-width: 150px; margin-bottom: 10px; object-fit: contain;">` : ''}
+                <p class="mb-1 fw-bold" style="color: #6c757d; font-size: 1.1rem;">${storeData.store_name}</p>
+                ${storeData.full_address ? `<p class="mb-1"><i class="fas fa-map-marker-alt me-1 text-muted"></i>${storeData.full_address}</p>` : (storeData.business_address ? `<p class="mb-1"><i class="fas fa-map-marker-alt me-1 text-muted"></i>${storeData.business_address}</p>` : '')}
+                ${storeData.business_email ? `<p class="mb-1"><i class="fas fa-envelope me-1 text-muted"></i>${storeData.business_email}</p>` : ''}
+                ${storeData.business_phone ? `<p class="mb-1"><i class="fas fa-phone me-1 text-muted"></i>${storeData.business_phone}</p>` : ''}
+            `;
+        } else {
+            fromHtml = `
+                <p class="mb-1 fw-bold" style="color: #6c757d; font-size: 1.1rem;">${siteTitle}</p>
+                <p class="mb-1"><i class="fas fa-map-marker-alt me-1 text-muted"></i>${companyAddress}</p>
+                <p class="mb-1"><i class="fas fa-envelope me-1 text-muted"></i>${companyEmail}</p>
+                <p class="mb-1"><i class="fas fa-phone me-1 text-muted"></i>${companyPhone}</p>
+            `;
+        }
+        
         let customerHtml = '';
         if (invoiceData.customer) {
             customerHtml = `
-                <p class="mb-1">${invoiceData.customer.name || 'N/A'}</p>
-                <p class="mb-1">${invoiceData.customer.email || 'N/A'}</p>
-                ${invoiceData.customer.address ? `<p class="mb-1">${invoiceData.customer.address}</p>` : ''}
-                ${invoiceData.customer.mobile_number ? `<p class="mb-1">${invoiceData.customer.mobile_number}</p>` : ''}
+                <p class="mb-1 fw-bold" style="font-size: 1.1rem;">${invoiceData.customer.name || 'N/A'}</p>
+                <p class="mb-1"><i class="fas fa-envelope me-1 text-muted"></i>${invoiceData.customer.email || 'N/A'}</p>
+                ${invoiceData.customer.address ? `<p class="mb-1"><i class="fas fa-map-marker-alt me-1 text-muted"></i>${invoiceData.customer.address}</p>` : ''}
+                ${invoiceData.customer.mobile_number ? `<p class="mb-1"><i class="fas fa-phone me-1 text-muted"></i>${invoiceData.customer.mobile_number}</p>` : ''}
             `;
         } else {
             customerHtml = `
-                <p class="mb-1">Guest Customer</p>
-                <p class="mb-1">N/A</p>
+                <p class="mb-1 fw-bold">Guest Customer</p>
+                <p class="mb-1 text-muted">N/A</p>
             `;
         }
         
@@ -1014,15 +1035,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <h5 class="fw-bold mb-3">From:</h5>
-                        <p class="mb-1">${siteTitle}</p>
-                        <p class="mb-1">${companyAddress}</p>
-                        <p class="mb-1">${companyEmail}</p>
-                        <p class="mb-1">${companyPhone}</p>
+                        <h5 class="fw-bold mb-3"><i class="fas fa-store me-2" style="color: #6c757d;"></i>From:</h5>
+                        ${fromHtml}
                     </div>
                     
                     <div class="col-md-6">
-                        <h5 class="fw-bold mb-3">To:</h5>
+                        <h5 class="fw-bold mb-3"><i class="fas fa-user me-2" style="color: #6c757d;"></i>To:</h5>
                         ${customerHtml}
                     </div>
                 </div>
@@ -1036,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="mb-1"><strong>Status:</strong> 
                             ${getStatusBadge(invoice.status)}
                         </p>
+                        ${storeData ? `<p class="mb-1"><strong>Store:</strong> <a href="/vendor/${storeData.store_slug}" class="text-decoration-none" style="color: #6c757d;">${storeData.store_name}</a></p>` : ''}
                     </div>
                 </div>
                 

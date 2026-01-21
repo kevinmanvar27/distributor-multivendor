@@ -61,10 +61,22 @@
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <h5 class="fw-bold mb-3">From:</h5>
-                                        <p class="mb-1">{{ setting('site_title', 'Frontend App') }}</p>
-                                        <p class="mb-1">{{ setting('address', 'Company Address') }}</p>
-                                        <p class="mb-1">{{ setting('company_email', 'company@example.com') }}</p>
-                                        <p class="mb-1">{{ setting('company_phone', '+1 (555) 123-4567') }}</p>
+                                        @php
+                                            $vendor = Auth::user()->vendor ?? Auth::user()->vendorStaff?->vendor;
+                                        @endphp
+                                        <p class="mb-1">{{ $vendor->store_name ?? $vendor->business_name ?? $vendor->name ?? setting('site_title', 'Store Name') }}</p>
+                                        @if($vendor->business_address)
+                                            <p class="mb-1">{{ $vendor->business_address }}@if($vendor->city), {{ $vendor->city }}@endif @if($vendor->state), {{ $vendor->state }}@endif @if($vendor->postal_code) - {{ $vendor->postal_code }}@endif</p>
+                                        @elseif($vendor->address)
+                                            <p class="mb-1">{{ $vendor->address }}</p>
+                                        @else
+                                            <p class="mb-1">{{ setting('address', 'Company Address') }}</p>
+                                        @endif
+                                        <p class="mb-1">{{ $vendor->business_email ?? $vendor->email ?? setting('company_email', 'company@example.com') }}</p>
+                                        <p class="mb-1">{{ $vendor->business_phone ?? $vendor->phone ?? setting('company_phone', '+1 (555) 123-4567') }}</p>
+                                        @if($vendor->gst_number)
+                                            <p class="mb-1"><strong>GST:</strong> {{ $vendor->gst_number }}</p>
+                                        @endif
                                     </div>
                                     
                                     <div class="col-md-6">

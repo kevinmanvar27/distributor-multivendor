@@ -850,15 +850,17 @@ class ShoppingCartController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
         
-        // Find the proforma invoice
+        // Find the proforma invoice with vendor relationship
         if (Auth::check()) {
-            $proformaInvoice = ProformaInvoice::where('id', $id)
+            $proformaInvoice = ProformaInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->first();
         } else {
             // For guests, get invoice by session ID
             $sessionId = session()->getId();
-            $proformaInvoice = ProformaInvoice::where('id', $id)
+            $proformaInvoice = ProformaInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('session_id', $sessionId)
                 ->first();
         }
@@ -882,6 +884,33 @@ class ShoppingCartController extends Controller
         // Ensure we have an array
         if (!is_array($invoiceData)) {
             $invoiceData = [];
+        }
+        
+        // Add vendor/store details to the response
+        $storeDetails = null;
+        if ($proformaInvoice->vendor) {
+            $vendor = $proformaInvoice->vendor;
+            $storeDetails = [
+                'id' => $vendor->id,
+                'store_name' => $vendor->store_name,
+                'store_slug' => $vendor->store_slug,
+                'store_logo' => $vendor->store_logo_url,
+                'business_email' => $vendor->business_email,
+                'business_phone' => $vendor->business_phone,
+                'business_address' => $vendor->business_address,
+                'city' => $vendor->city,
+                'state' => $vendor->state,
+                'country' => $vendor->country,
+                'postal_code' => $vendor->postal_code,
+                'gst_number' => $vendor->gst_number,
+                'full_address' => implode(', ', array_filter([
+                    $vendor->business_address,
+                    $vendor->city,
+                    $vendor->state,
+                    $vendor->postal_code,
+                    $vendor->country
+                ])),
+            ];
         }
         
         // Automatically remove all notifications for this invoice when viewing directly
@@ -908,6 +937,7 @@ class ShoppingCartController extends Controller
         return response()->json([
             'invoice' => $proformaInvoice,
             'data' => $invoiceData,
+            'store' => $storeDetails,
             'unread_count' => $unreadCount
         ]);
     }
@@ -1232,15 +1262,17 @@ class ShoppingCartController extends Controller
             return redirect()->route('frontend.login');
         }
         
-        // Find the proforma invoice
+        // Find the proforma invoice with vendor relationship
         if (Auth::check()) {
-            $proformaInvoice = ProformaInvoice::where('id', $id)
+            $proformaInvoice = ProformaInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->first();
         } else {
             // For guests, get invoice by session ID
             $sessionId = session()->getId();
-            $proformaInvoice = ProformaInvoice::where('id', $id)
+            $proformaInvoice = ProformaInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('session_id', $sessionId)
                 ->first();
         }
@@ -1266,10 +1298,50 @@ class ShoppingCartController extends Controller
             $invoiceData = [];
         }
         
+        // Prepare store/vendor details
+        $storeDetails = null;
+        if ($proformaInvoice->vendor) {
+            $vendor = $proformaInvoice->vendor;
+            
+            // Determine the correct logo path for PDF (needs file path, not URL)
+            $logoPath = null;
+            if ($vendor->store_logo) {
+                // Check in vendor root folder
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $vendor->store_logo)) {
+                    $logoPath = 'vendor/' . $vendor->store_logo;
+                }
+                // Check in vendor-specific subfolder
+                elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $vendor->id . '/' . $vendor->store_logo)) {
+                    $logoPath = 'vendor/' . $vendor->id . '/' . $vendor->store_logo;
+                }
+            }
+            
+            $storeDetails = [
+                'store_name' => $vendor->store_name,
+                'store_logo' => $logoPath,
+                'business_email' => $vendor->business_email,
+                'business_phone' => $vendor->business_phone,
+                'business_address' => $vendor->business_address,
+                'city' => $vendor->city,
+                'state' => $vendor->state,
+                'country' => $vendor->country,
+                'postal_code' => $vendor->postal_code,
+                'gst_number' => $vendor->gst_number,
+                'full_address' => implode(', ', array_filter([
+                    $vendor->business_address,
+                    $vendor->city,
+                    $vendor->state,
+                    $vendor->postal_code,
+                    $vendor->country
+                ])),
+            ];
+        }
+        
         // Prepare data for the PDF view
         $data = [
             'invoice' => $proformaInvoice,
             'invoiceData' => $invoiceData,
+            'store' => $storeDetails,
             'siteTitle' => setting('site_title', 'Frontend App'),
             'companyAddress' => setting('address', 'Company Address'),
             'companyEmail' => setting('email', 'company@example.com'),
@@ -1337,15 +1409,17 @@ class ShoppingCartController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
         
-        // Find the without-GST invoice
+        // Find the without-GST invoice with vendor relationship
         if (Auth::check()) {
-            $invoice = WithoutGstInvoice::where('id', $id)
+            $invoice = WithoutGstInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('user_id', Auth::id())
                 ->first();
         } else {
             // For guests, get invoice by session ID
             $sessionId = session()->getId();
-            $invoice = WithoutGstInvoice::where('id', $id)
+            $invoice = WithoutGstInvoice::with('vendor')
+                ->where('id', $id)
                 ->where('session_id', $sessionId)
                 ->first();
         }
@@ -1371,10 +1445,138 @@ class ShoppingCartController extends Controller
             $invoiceData = [];
         }
         
+        // Add vendor/store details to the response
+        $storeDetails = null;
+        if ($invoice->vendor) {
+            $vendor = $invoice->vendor;
+            $storeDetails = [
+                'id' => $vendor->id,
+                'store_name' => $vendor->store_name,
+                'store_slug' => $vendor->store_slug,
+                'store_logo' => $vendor->store_logo_url,
+                'business_email' => $vendor->business_email,
+                'business_phone' => $vendor->business_phone,
+                'business_address' => $vendor->business_address,
+                'city' => $vendor->city,
+                'state' => $vendor->state,
+                'country' => $vendor->country,
+                'postal_code' => $vendor->postal_code,
+                'gst_number' => $vendor->gst_number,
+                'full_address' => implode(', ', array_filter([
+                    $vendor->business_address,
+                    $vendor->city,
+                    $vendor->state,
+                    $vendor->postal_code,
+                    $vendor->country
+                ])),
+            ];
+        }
+        
+        return response()->json([
+            'invoice' => $invoice,
+            'data' => $invoiceData,
+            'store' => $storeDetails
+        ]);
+    }
+    
+    /**
+     * Generate and download PDF for a without-GST invoice.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadWithoutGstInvoicePDF($id)
+    {
+        // Check if frontend requires authentication and user is not logged in
+        $setting = \App\Models\Setting::first();
+        $accessPermission = $setting->frontend_access_permission ?? 'open_for_all';
+        
+        // For registered_users_only and admin_approval_required modes, 
+        // redirect guests from cart pages to login, unless it's open_for_all
+        if ($accessPermission !== 'open_for_all' && !Auth::check()) {
+            return redirect()->route('frontend.login');
+        }
+        
+        // Find the without-GST invoice with vendor relationship
+        if (Auth::check()) {
+            $invoice = WithoutGstInvoice::with('vendor')
+                ->where('id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
+        } else {
+            // For guests, get invoice by session ID
+            $sessionId = session()->getId();
+            $invoice = WithoutGstInvoice::with('vendor')
+                ->where('id', $id)
+                ->where('session_id', $sessionId)
+                ->first();
+        }
+        
+        if (!$invoice) {
+            return redirect()->route('frontend.cart.without-gst.invoices')->with('error', 'Invoice not found.');
+        }
+        
+        // Get the invoice data (handle both array and JSON string for backward compatibility)
+        $invoiceData = $invoice->invoice_data;
+        
+        // Handle case where invoice_data might be a JSON string (double-encoded from old records)
+        if (is_string($invoiceData)) {
+            $invoiceData = json_decode($invoiceData, true);
+            // Check if it's still a string (triple-encoded edge case)
+            if (is_string($invoiceData)) {
+                $invoiceData = json_decode($invoiceData, true);
+            }
+        }
+        
+        // Ensure we have an array
+        if (!is_array($invoiceData)) {
+            $invoiceData = [];
+        }
+        
+        // Prepare store/vendor details
+        $storeDetails = null;
+        if ($invoice->vendor) {
+            $vendor = $invoice->vendor;
+            
+            // Determine the correct logo path for PDF (needs file path, not URL)
+            $logoPath = null;
+            if ($vendor->store_logo) {
+                // Check in vendor root folder
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $vendor->store_logo)) {
+                    $logoPath = 'vendor/' . $vendor->store_logo;
+                }
+                // Check in vendor-specific subfolder
+                elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists('vendor/' . $vendor->id . '/' . $vendor->store_logo)) {
+                    $logoPath = 'vendor/' . $vendor->id . '/' . $vendor->store_logo;
+                }
+            }
+            
+            $storeDetails = [
+                'store_name' => $vendor->store_name,
+                'store_logo' => $logoPath,
+                'business_email' => $vendor->business_email,
+                'business_phone' => $vendor->business_phone,
+                'business_address' => $vendor->business_address,
+                'city' => $vendor->city,
+                'state' => $vendor->state,
+                'country' => $vendor->country,
+                'postal_code' => $vendor->postal_code,
+                'gst_number' => $vendor->gst_number,
+                'full_address' => implode(', ', array_filter([
+                    $vendor->business_address,
+                    $vendor->city,
+                    $vendor->state,
+                    $vendor->postal_code,
+                    $vendor->country
+                ])),
+            ];
+        }
+        
         // Prepare data for the PDF view
         $data = [
             'invoice' => $invoice,
             'invoiceData' => $invoiceData,
+            'store' => $storeDetails,
             'invoiceNumber' => $invoice->invoice_number,
             'invoiceDate' => $invoiceData['invoice_date'] ?? $invoice->created_at->format('Y-m-d'),
             'customer' => $invoiceData['customer'] ?? null,

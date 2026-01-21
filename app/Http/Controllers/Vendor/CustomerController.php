@@ -51,12 +51,22 @@ class CustomerController extends Controller
         ->orderBy('created_at', 'desc')
         ->paginate(20);
         
-        // Calculate statistics
-        $totalCustomers = VendorCustomer::where('vendor_id', $vendor->id)->count();
-            
+        // Calculate statistics - vendor-wise customer counts (only actual customers with user_role = 'user')
+        $totalCustomers = VendorCustomer::where('vendor_id', $vendor->id)
+            ->whereHas('user', function($q) {
+                $q->where('user_role', 'user');
+            })
+            ->count();
+        
+        // Get new customers this month (based on when they became a customer of THIS vendor)
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+        
         $newCustomersThisMonth = VendorCustomer::where('vendor_id', $vendor->id)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
+            ->whereHas('user', function($q) {
+                $q->where('user_role', 'user');
+            })
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->count();
         
         return view('vendor.customers.index', compact(

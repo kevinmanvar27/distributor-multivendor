@@ -1,5 +1,4 @@
 @extends('vendor.layouts.app')
-@extends('vendor.layouts.app')
 
 @section('title', $user->name . ' - Pending Bills')
 
@@ -214,6 +213,21 @@
                                                                            placeholder="Enter amount" required>
                                                                 </div>
                                                                 <small class="text-muted">Max: ₹{{ number_format($pendingAmount, 2) }}</small>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Payment Method</label>
+                                                                <select name="payment_method" class="form-select" required>
+                                                                    <option value="">Select Payment Method</option>
+                                                                    <option value="cash">Cash</option>
+                                                                    <option value="upi">UPI</option>
+                                                                    <option value="bank_transfer">Bank Transfer</option>
+                                                                    <option value="cheque">Cheque</option>
+                                                                    <option value="other">Other</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Notes (Optional)</label>
+                                                                <textarea name="notes" class="form-control" rows="2" placeholder="Any notes..."></textarea>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">

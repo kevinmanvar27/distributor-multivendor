@@ -78,7 +78,7 @@
                                         <th class="py-3">Email</th>
                                         <th class="py-3">Phone</th>
                                         <th class="py-3 text-center">Orders</th>
-                                        <th class="py-3">Registered</th>
+                                        <th class="py-3">Customer Since</th>
                                         <th class="py-3 text-end px-4">Actions</th>
                                     </tr>
                                 </thead>
@@ -97,11 +97,11 @@
                                                 </div>
                                             </td>
                                             <td class="py-3">{{ $customer->email }}</td>
-                                            <td class="py-3">{{ $customer->phone ?? '-' }}</td>
+                                            <td class="py-3">{{ $customer->mobile_number ?? '-' }}</td>
                                             <td class="py-3 text-center">
                                                 <span class="badge bg-info">{{ $customer->orders_count }}</span>
                                             </td>
-                                            <td class="py-3">{{ $customer->created_at->format('M d, Y') }}</td>
+                                            <td class="py-3">{{ $customer->customerOfVendors->first()?->pivot?->created_at?->format('M d, Y') ?? $customer->created_at->format('M d, Y') }}</td>
                                             <td class="py-3 text-end px-4">
                                                 <a href="{{ route('vendor.customers.show', $customer->id) }}" 
                                                    class="btn btn-sm btn-outline-primary rounded-pill">

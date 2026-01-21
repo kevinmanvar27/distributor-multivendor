@@ -130,6 +130,13 @@
             font-size: 9px;
             color: #777;
         }
+
+        /* Store Logo */
+        .store-logo {
+            max-width: 120px;
+            max-height: 50px;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
@@ -138,14 +145,20 @@
 <div class="container">
 
     <div class="header">
-        @if($headerLogo)
+        @if(isset($store) && $store && !empty($store['store_logo']))
+            {{-- Show Store Logo if vendor invoice --}}
+            <img src="{{ public_path('storage/' . $store['store_logo']) }}" class="header-logo">
+            <div class="header-title">INVOICE</div>
+            <div class="without-gst-badge">WITHOUT GST</div>
+        @elseif($headerLogo)
             <img src="{{ public_path('storage/' . $headerLogo) }}" class="header-logo">
+            <div class="header-title">INVOICE</div>
+            <div class="without-gst-badge">WITHOUT GST</div>
         @else
-            <h1>{{ $siteTitle }}</h1>
+            <h1>{{ isset($store) && $store ? $store['store_name'] : $siteTitle }}</h1>
+            <div class="header-title">INVOICE</div>
+            <div class="without-gst-badge">WITHOUT GST</div>
         @endif
-
-        <div class="header-title">INVOICE</div>
-        <div class="without-gst-badge">WITHOUT GST</div>
     </div>
 
     <table style="width:100%; margin-bottom:20px;">
@@ -153,10 +166,27 @@
             <td style="width:50%; vertical-align:top; padding-right:15px; border: none;">
                 <div class="section-title">From</div>
 
-                <div><strong>Company:</strong> {{ $siteTitle }}</div>
-                <div><strong>Address:</strong> {{ $companyAddress }}</div>
-                <div><strong>Email:</strong> {{ $companyEmail }}</div>
-                <div><strong>Phone:</strong> {{ $companyPhone }}</div>
+                @if(isset($store) && $store)
+                    {{-- Vendor/Store Details --}}
+                    <div><strong>Store:</strong> {{ $store['store_name'] }}</div>
+                    @if(!empty($store['full_address']))
+                        <div><strong>Address:</strong> {{ $store['full_address'] }}</div>
+                    @elseif(!empty($store['business_address']))
+                        <div><strong>Address:</strong> {{ $store['business_address'] }}</div>
+                    @endif
+                    @if(!empty($store['business_email']))
+                        <div><strong>Email:</strong> {{ $store['business_email'] }}</div>
+                    @endif
+                    @if(!empty($store['business_phone']))
+                        <div><strong>Phone:</strong> {{ $store['business_phone'] }}</div>
+                    @endif
+                @else
+                    {{-- Default Company Details --}}
+                    <div><strong>Company:</strong> {{ $siteTitle }}</div>
+                    <div><strong>Address:</strong> {{ $companyAddress }}</div>
+                    <div><strong>Email:</strong> {{ $companyEmail }}</div>
+                    <div><strong>Phone:</strong> {{ $companyPhone }}</div>
+                @endif
             </td>
 
             <td style="width:50%; vertical-align:top; padding-left:15px; border: none;">
@@ -299,6 +329,9 @@
     @endif
 
     <div class="footer">
+        @if(isset($store) && $store)
+            Invoice from {{ $store['store_name'] }}<br>
+        @endif
         This is a computer-generated document and does not require a signature.<br>
         This invoice is exempt from GST.<br>
         Thank you for your business!

@@ -111,10 +111,19 @@
                                         @php
                                             $vendor = Auth::user()->vendor ?? Auth::user()->vendorStaff?->vendor;
                                         @endphp
-                                        <p class="mb-1">{{ $vendor->store_name ?? $vendor->name ?? 'Store Name' }}</p>
-                                        <p class="mb-1">{{ $vendor->address ?? 'Store Address' }}</p>
-                                        <p class="mb-1">{{ $vendor->email ?? Auth::user()->email }}</p>
-                                        <p class="mb-1">{{ $vendor->phone ?? Auth::user()->phone ?? '' }}</p>
+                                        <p class="mb-1">{{ $vendor->store_name ?? $vendor->business_name ?? $vendor->name ?? 'Store Name' }}</p>
+                                        @if($vendor->business_address)
+                                            <p class="mb-1">{{ $vendor->business_address }}@if($vendor->city), {{ $vendor->city }}@endif @if($vendor->state), {{ $vendor->state }}@endif @if($vendor->postal_code) - {{ $vendor->postal_code }}@endif</p>
+                                        @elseif($vendor->address)
+                                            <p class="mb-1">{{ $vendor->address }}</p>
+                                        @else
+                                            <p class="mb-1">Store Address</p>
+                                        @endif
+                                        <p class="mb-1">{{ $vendor->business_email ?? $vendor->email ?? Auth::user()->email }}</p>
+                                        <p class="mb-1">{{ $vendor->business_phone ?? $vendor->phone ?? Auth::user()->phone ?? '' }}</p>
+                                        @if($vendor->gst_number)
+                                            <p class="mb-1"><strong>GST:</strong> {{ $vendor->gst_number }}</p>
+                                        @endif
                                     </div>
                                     
                                     <div class="col-md-6">
@@ -431,6 +440,21 @@
                                    placeholder="Enter amount" required>
                         </div>
                         <small class="text-muted">Max: ₹{{ number_format($pendingAmount, 2) }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="">Select Payment Method</option>
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Any notes..."></textarea>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="payFullAmountBtn"
