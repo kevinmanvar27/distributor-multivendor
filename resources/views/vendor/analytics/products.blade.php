@@ -76,7 +76,7 @@
                         <div class="card border-0 shadow-sm stat-card h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle me-3">
+                                    <div class="stat-icon bg-primary text-white p-2 rounded-circle me-3">
                                         <i class="fas fa-eye"></i>
                                     </div>
                                     <div>
@@ -91,7 +91,7 @@
                         <div class="card border-0 shadow-sm stat-card h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle me-3">
+                                    <div class="stat-icon bg-success text-white p-2 rounded-circle me-3">
                                         <i class="fas fa-users"></i>
                                     </div>
                                     <div>
@@ -106,7 +106,7 @@
                         <div class="card border-0 shadow-sm stat-card h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="stat-icon bg-info bg-opacity-10 text-info rounded-circle me-3">
+                                    <div class="stat-icon bg-info text-white p-2 rounded-circle me-3">
                                         <i class="fas fa-box"></i>
                                     </div>
                                     <div>
@@ -209,7 +209,7 @@
                                                         </div>
                                                     </td>
                                                     <td class="text-end pe-4">
-                                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">
+                                                        <span class="badge bg-primary badge bg-success text-white rounded-pill px-3">
                                                             {{ number_format($item->view_count) }}
                                                         </span>
                                                     </td>
@@ -265,7 +265,7 @@
                                                         </div>
                                                     </td>
                                                     <td class="text-end pe-4">
-                                                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">
+                                                        <span class="badge bg-warning badge bg-success text-white rounded-pill px-3">
                                                             {{ number_format($item->view_count) }}
                                                         </span>
                                                     </td>
@@ -372,7 +372,7 @@
                                             </td>
                                             <td>
                                                 @if($view->user)
-                                                    <span class="badge bg-success bg-opacity-10 text-success">{{ $view->user->name }}</span>
+                                                    <span class="badge bg-success badge bg-success text-white">{{ $view->user->name }}</span>
                                                 @else
                                                     <span class="text-muted">Guest</span>
                                                 @endif

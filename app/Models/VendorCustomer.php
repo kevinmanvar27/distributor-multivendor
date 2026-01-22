@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class VendorCustomer extends Model
+class VendorCustomer extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -18,6 +20,39 @@ class VendorCustomer extends Model
         'vendor_id',
         'user_id',
         'first_invoice_id',
+        'name',
+        'email',
+        'password',
+        'mobile_number',
+        'address',
+        'city',
+        'state',
+        'postal_code',
+        'discount_percentage',
+        'is_active',
+        'last_login_at',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'password' => 'hashed',
+        'discount_percentage' => 'decimal:2',
+        'is_active' => 'boolean',
+        'last_login_at' => 'datetime',
     ];
 
     /**
@@ -29,7 +64,7 @@ class VendorCustomer extends Model
     }
 
     /**
-     * Get the user (customer).
+     * Get the user (customer) - for backward compatibility with existing customers.
      */
     public function user()
     {
@@ -42,6 +77,66 @@ class VendorCustomer extends Model
     public function firstInvoice()
     {
         return $this->belongsTo(ProformaInvoice::class, 'first_invoice_id');
+    }
+
+    /**
+     * Get all invoices for this customer from their vendor.
+     */
+    public function invoices()
+    {
+        return $this->hasMany(ProformaInvoice::class, 'vendor_customer_id');
+    }
+
+    /**
+     * Get the shopping cart items for this customer.
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(ShoppingCartItem::class, 'vendor_customer_id');
+    }
+
+    /**
+     * Get the wishlist items for this customer.
+     */
+    public function wishlistItems()
+    {
+        return $this->hasMany(Wishlist::class, 'vendor_customer_id');
+    }
+
+    /**
+     * Check if customer is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->is_active;
+    }
+
+    /**
+     * Get products available to this customer (only from their vendor).
+     */
+    public function availableProducts()
+    {
+        return Product::where('vendor_id', $this->vendor_id)
+            ->where('status', 'active');
+    }
+
+    /**
+     * Get categories available to this customer (only from their vendor).
+     */
+    public function availableCategories()
+    {
+        return Category::where('vendor_id', $this->vendor_id);
+    }
+
+    /**
+     * Calculate discounted price for a product.
+     */
+    public function getDiscountedPrice($price): float
+    {
+        if ($this->discount_percentage > 0) {
+            return $price - ($price * $this->discount_percentage / 100);
+        }
+        return $price;
     }
 
     /**
@@ -63,5 +158,54 @@ class VendorCustomer extends Model
                 'first_invoice_id' => $invoiceId,
             ]
         );
+    }
+
+    /**
+     * Scope for active customers.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope for customers of a specific vendor.
+     */
+    public function scopeForVendor($query, $vendorId)
+    {
+        return $query->where('vendor_id', $vendorId);
+    }
+
+    /**
+     * Update last login timestamp.
+     */
+    public function updateLastLogin()
+    {
+        $this->update(['last_login_at' => now()]);
+    }
+
+    /**
+     * Get the identifier that will be stored in the subject claim of the JWT.
+     * This is used by Sanctum for token authentication.
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'id';
+    }
+
+    /**
+     * Get the name of the unique identifier for the customer.
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    /**
+     * Get the password for the customer.
+     */
+    public function getAuthPassword()
+    {
+        return $this->password;
     }
 }

@@ -41,8 +41,8 @@
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-3 p-3">
-                                        <i class="fas fa-rupee-sign text-success fa-lg"></i>
+                                    <div class="flex-shrink-0 bg-success rounded-3 p-3">
+                                        <i class="fas fa-rupee-sign text-white fa-lg"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="text-muted mb-1 small">Total Revenue</h6>
@@ -56,8 +56,8 @@
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0 bg-primary bg-opacity-10 rounded-3 p-3">
-                                        <i class="fas fa-wallet text-primary fa-lg"></i>
+                                    <div class="flex-shrink-0 bg-primary rounded-3 p-3">
+                                        <i class="fas fa-wallet text-white fa-lg"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="text-muted mb-1 small">Net Earnings</h6>
@@ -71,8 +71,8 @@
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0 bg-warning bg-opacity-10 rounded-3 p-3">
-                                        <i class="fas fa-shopping-cart text-warning fa-lg"></i>
+                                    <div class="flex-shrink-0 bg-warning rounded-3 p-3">
+                                        <i class="fas fa-shopping-cart text-white fa-lg"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="text-muted mb-1 small">Total Orders</h6>
@@ -86,8 +86,8 @@
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0 bg-info bg-opacity-10 rounded-3 p-3">
-                                        <i class="fas fa-box text-info fa-lg"></i>
+                                    <div class="flex-shrink-0 bg-info rounded-3 p-3">
+                                        <i class="fas fa-box text-white fa-lg"></i>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="text-muted mb-1 small">Products Sold</h6>

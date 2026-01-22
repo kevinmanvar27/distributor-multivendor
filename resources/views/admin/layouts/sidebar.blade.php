@@ -90,6 +90,16 @@
             </li>
             @endif
             
+            <!-- 5.5 Referrals Section -->
+            @if(auth()->user()->hasPermission('viewAny_referral'))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin.referrals*') ? 'active' : '' }}" href="{{ route('admin.referrals.index') }}" data-title="Referrals">
+                    <i class="fas fa-user-friends me-3"></i>
+                    <span class="sidebar-text">Referrals</span>
+                </a>
+            </li>
+            @endif
+            
             <!-- 6. Invoice Section -->
             @if(auth()->user()->hasPermission('manage_proforma_invoices'))
                 <li class="nav-item">

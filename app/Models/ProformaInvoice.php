@@ -36,6 +36,7 @@ class ProformaInvoice extends Model
         'invoice_number',
         'user_id',
         'vendor_id',
+        'vendor_customer_id',
         'session_id',
         'total_amount',
         'paid_amount',
@@ -104,6 +105,14 @@ class ProformaInvoice extends Model
     }
 
     /**
+     * Get the vendor customer that owns the proforma invoice.
+     */
+    public function vendorCustomer()
+    {
+        return $this->belongsTo(VendorCustomer::class);
+    }
+
+    /**
      * Scope a query to only include invoices for a specific user.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
@@ -113,6 +122,18 @@ class ProformaInvoice extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope a query to only include invoices for a specific vendor customer.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $vendorCustomerId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForVendorCustomer($query, $vendorCustomerId)
+    {
+        return $query->where('vendor_customer_id', $vendorCustomerId);
     }
 
     /**

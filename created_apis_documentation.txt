@@ -1,0 +1,1123 @@
+# Multi-Vendor Distributor API Documentation
+# Created: January 2024
+# Version: 1.0
+
+================================================================================
+                              API OVERVIEW
+================================================================================
+
+Base URL: /api/v1
+Authentication: Laravel Sanctum (Bearer Token)
+Content-Type: application/json
+
+================================================================================
+                         VENDOR REGISTRATION & AUTH
+================================================================================
+
+--------------------------------------------------------------------------------
+1. VENDOR REGISTRATION
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/vendor/register
+Auth: Not Required (Public)
+Description: Register a new vendor account
+
+Request Body:
+{
+    "name": "John Doe",
+    "email": "vendor@example.com",
+    "password": "Password123",
+    "password_confirmation": "Password123",
+    "store_name": "John's Electronics Store",
+    "store_description": "Best electronics store in town",
+    "business_email": "business@example.com",
+    "business_phone": "9876543210",
+    "business_address": "123 Main Street",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "country": "India",
+    "postal_code": "400001",
+    "gst_number": "27AABCU9603R1ZM",
+    "pan_number": "ABCDE1234F"
+}
+
+Response (201 Created):
+{
+    "success": true,
+    "message": "Vendor registered successfully. Please wait for admin approval.",
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "vendor@example.com"
+        },
+        "vendor": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "status": "pending"
+        },
+        "token": "1|abc123xyz..."
+    }
+}
+
+--------------------------------------------------------------------------------
+2. VENDOR LOGIN
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/vendor/login
+Auth: Not Required (Public)
+Description: Login as a vendor
+
+Request Body:
+{
+    "email": "vendor@example.com",
+    "password": "Password123"
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "vendor@example.com"
+        },
+        "vendor": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "status": "approved",
+            "store_logo_url": "https://example.com/storage/vendor/logo.jpg"
+        },
+        "token": "2|def456xyz..."
+    }
+}
+
+================================================================================
+                           VENDOR DASHBOARD APIs
+================================================================================
+
+--------------------------------------------------------------------------------
+3. GET VENDOR DASHBOARD
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/dashboard
+Auth: Required (Bearer Token)
+Description: Get vendor dashboard statistics
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Dashboard data retrieved successfully",
+    "data": {
+        "vendor": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "status": "approved",
+            "store_logo_url": "https://example.com/storage/vendor/logo.jpg"
+        },
+        "statistics": {
+            "total_products": 45,
+            "active_products": 42,
+            "total_orders": 128,
+            "pending_orders": 12,
+            "total_revenue": 125000.00,
+            "this_month_revenue": 25000.00,
+            "total_customers": 89
+        },
+        "recent_orders": [
+            {
+                "id": 1,
+                "invoice_number": "INV-2024-001",
+                "customer_name": "Customer Name",
+                "vendor_total": 5000.00,
+                "status": "approved",
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        ],
+        "low_stock_products": [
+            {
+                "id": 1,
+                "name": "Product Name",
+                "stock_quantity": 5,
+                "low_quantity_threshold": 10
+            }
+        ]
+    }
+}
+
+--------------------------------------------------------------------------------
+4. GET VENDOR ANALYTICS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/analytics
+Auth: Required (Bearer Token)
+Description: Get detailed analytics data
+Query Parameters:
+  - period: string (weekly, monthly, yearly) - default: monthly
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Analytics data retrieved successfully",
+    "data": {
+        "revenue_chart": [
+            {"label": "Jan 2024", "revenue": 15000.00},
+            {"label": "Feb 2024", "revenue": 18000.00}
+        ],
+        "order_status_distribution": [
+            {"status": "Draft", "count": 5},
+            {"status": "Approved", "count": 10},
+            {"status": "Dispatch", "count": 8},
+            {"status": "Out for Delivery", "count": 3},
+            {"status": "Delivered", "count": 95},
+            {"status": "Return", "count": 2}
+        ],
+        "top_selling_products": [
+            {
+                "id": 1,
+                "name": "Product Name",
+                "quantity_sold": 150,
+                "revenue": 75000.00
+            }
+        ]
+    }
+}
+
+================================================================================
+                         VENDOR PROFILE & SETTINGS
+================================================================================
+
+--------------------------------------------------------------------------------
+5. GET VENDOR PROFILE
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/profile
+Auth: Required (Bearer Token)
+Description: Get vendor profile and store settings
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Profile retrieved successfully",
+    "data": {
+        "user": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "vendor@example.com"
+        },
+        "vendor": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "store_description": "Best electronics store in town",
+            "store_logo_url": "https://example.com/storage/vendor/logo.jpg",
+            "store_banner_url": "https://example.com/storage/vendor/banner.jpg",
+            "business_email": "business@example.com",
+            "business_phone": "9876543210",
+            "business_address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "country": "India",
+            "postal_code": "400001",
+            "gst_number": "27AABCU9603R1ZM",
+            "pan_number": "ABCDE1234F",
+            "commission_rate": 10.00,
+            "status": "approved",
+            "is_featured": false,
+            "social_links": {
+                "facebook": "https://facebook.com/store",
+                "instagram": "https://instagram.com/store"
+            },
+            "bank_details": {
+                "bank_name": "HDFC Bank",
+                "account_number": "1234567890",
+                "ifsc_code": "HDFC0001234",
+                "account_holder_name": "John Doe"
+            }
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+6. UPDATE VENDOR PROFILE
+--------------------------------------------------------------------------------
+Endpoint: PUT /api/v1/vendor/profile
+Auth: Required (Bearer Token)
+Description: Update vendor profile and store settings
+
+Request Body:
+{
+    "name": "John Doe Updated",
+    "store_name": "John's Electronics Store",
+    "store_description": "Updated description",
+    "business_email": "new-business@example.com",
+    "business_phone": "9876543211",
+    "business_address": "456 New Street",
+    "city": "Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "postal_code": "110001",
+    "social_links": {
+        "facebook": "https://facebook.com/newstore",
+        "instagram": "https://instagram.com/newstore",
+        "twitter": "https://twitter.com/newstore"
+    }
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Profile updated successfully",
+    "data": {
+        "vendor": { ... updated vendor data ... }
+    }
+}
+
+--------------------------------------------------------------------------------
+7. UPLOAD STORE LOGO
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/vendor/store-logo
+Auth: Required (Bearer Token)
+Description: Upload or update store logo
+Content-Type: multipart/form-data
+
+Request Body:
+{
+    "logo": [File - image/jpeg, image/png, max 2MB]
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store logo uploaded successfully",
+    "data": {
+        "store_logo_url": "https://example.com/storage/vendor/1/logo.jpg"
+    }
+}
+
+--------------------------------------------------------------------------------
+8. UPLOAD STORE BANNER
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/vendor/store-banner
+Auth: Required (Bearer Token)
+Description: Upload or update store banner
+Content-Type: multipart/form-data
+
+Request Body:
+{
+    "banner": [File - image/jpeg, image/png, max 5MB]
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store banner uploaded successfully",
+    "data": {
+        "store_banner_url": "https://example.com/storage/vendor/1/banner.jpg"
+    }
+}
+
+--------------------------------------------------------------------------------
+9. UPDATE BANK DETAILS
+--------------------------------------------------------------------------------
+Endpoint: PUT /api/v1/vendor/bank-details
+Auth: Required (Bearer Token)
+Description: Update vendor bank details for payouts
+
+Request Body:
+{
+    "bank_name": "HDFC Bank",
+    "bank_account_number": "1234567890",
+    "bank_ifsc_code": "HDFC0001234",
+    "bank_account_holder_name": "John Doe"
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Bank details updated successfully",
+    "data": {
+        "bank_name": "HDFC Bank",
+        "bank_account_number": "****7890",
+        "bank_ifsc_code": "HDFC0001234",
+        "bank_account_holder_name": "John Doe"
+    }
+}
+
+================================================================================
+                        VENDOR PRODUCT MANAGEMENT
+================================================================================
+
+--------------------------------------------------------------------------------
+10. GET VENDOR PRODUCTS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/products
+Auth: Required (Bearer Token)
+Description: Get list of vendor's products
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+  - status: string (draft, published, archived)
+  - search: string (search by name)
+  - category_id: integer
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Products retrieved successfully",
+    "data": {
+        "products": {
+            "current_page": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Product Name",
+                    "sku": "SKU001",
+                    "selling_price": 1000.00,
+                    "mrp": 1200.00,
+                    "stock_quantity": 50,
+                    "status": "published",
+                    "main_photo_url": "https://example.com/storage/products/1.jpg",
+                    "created_at": "2024-01-15T10:30:00Z"
+                }
+            ],
+            "per_page": 15,
+            "total": 45,
+            "last_page": 3
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+11. CREATE PRODUCT
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/vendor/products
+Auth: Required (Bearer Token)
+Description: Create a new product
+
+Request Body:
+{
+    "name": "New Product",
+    "description": "Product description",
+    "short_description": "Short description",
+    "sku": "SKU001",
+    "barcode": "1234567890123",
+    "selling_price": 1000.00,
+    "mrp": 1200.00,
+    "cost_price": 800.00,
+    "stock_quantity": 100,
+    "low_quantity_threshold": 10,
+    "weight": 0.5,
+    "dimensions": {
+        "length": 10,
+        "width": 5,
+        "height": 3
+    },
+    "product_categories": [
+        {"category_id": 1, "subcategory_id": 2}
+    ],
+    "status": "published",
+    "is_featured": false,
+    "product_type": "simple",
+    "attributes": [
+        {"name": "Color", "value": "Red"}
+    ]
+}
+
+Response (201 Created):
+{
+    "success": true,
+    "message": "Product created successfully",
+    "data": {
+        "product": {
+            "id": 1,
+            "name": "New Product",
+            "sku": "SKU001",
+            ... full product data ...
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+12. UPDATE PRODUCT
+--------------------------------------------------------------------------------
+Endpoint: PUT /api/v1/vendor/products/{id}
+Auth: Required (Bearer Token)
+Description: Update an existing product
+
+Request Body:
+{
+    "name": "Updated Product Name",
+    "selling_price": 1100.00,
+    "stock_quantity": 80,
+    "status": "published"
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Product updated successfully",
+    "data": {
+        "product": { ... updated product data ... }
+    }
+}
+
+--------------------------------------------------------------------------------
+13. DELETE PRODUCT
+--------------------------------------------------------------------------------
+Endpoint: DELETE /api/v1/vendor/products/{id}
+Auth: Required (Bearer Token)
+Description: Delete a product
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Product deleted successfully"
+}
+
+--------------------------------------------------------------------------------
+14. GET LOW STOCK PRODUCTS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/products/low-stock
+Auth: Required (Bearer Token)
+Description: Get products with low stock
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Low stock products retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Product Name",
+            "sku": "SKU001",
+            "stock_quantity": 5,
+            "low_quantity_threshold": 10,
+            "main_photo_url": "https://example.com/storage/products/1.jpg"
+        }
+    ]
+}
+
+================================================================================
+                         VENDOR ORDER MANAGEMENT
+================================================================================
+
+--------------------------------------------------------------------------------
+15. GET VENDOR ORDERS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/orders
+Auth: Required (Bearer Token)
+Description: Get orders containing vendor's products
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+  - status: string (draft, approved, dispatch, out_for_delivery, delivered, return)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Orders retrieved successfully",
+    "data": {
+        "orders": [
+            {
+                "id": 1,
+                "invoice_number": "INV-2024-001",
+                "user": {
+                    "id": 1,
+                    "name": "Customer Name",
+                    "email": "customer@example.com"
+                },
+                "status": "approved",
+                "vendor_total": 5000.00,
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 128,
+            "last_page": 9
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+16. GET ORDER DETAILS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/vendor/orders/{id}
+Auth: Required (Bearer Token)
+Description: Get details of a specific order
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Order details retrieved successfully",
+    "data": {
+        "order": {
+            "id": 1,
+            "invoice_number": "INV-2024-001",
+            "status": "approved",
+            "created_at": "2024-01-15T10:30:00Z",
+            "updated_at": "2024-01-15T10:30:00Z"
+        },
+        "customer": {
+            "id": 1,
+            "name": "Customer Name",
+            "email": "customer@example.com"
+        },
+        "vendor_items": [
+            {
+                "product_id": 1,
+                "name": "Product Name",
+                "quantity": 2,
+                "price": 1000.00,
+                "total": 2000.00
+            }
+        ],
+        "vendor_total": 5000.00,
+        "shipping_address": {
+            "name": "Customer Name",
+            "address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "postal_code": "400001",
+            "phone": "9876543210"
+        }
+    }
+}
+
+================================================================================
+                           PUBLIC STORE APIs
+================================================================================
+
+--------------------------------------------------------------------------------
+17. LIST ALL STORES
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores
+Auth: Not Required (Public)
+Description: Get list of approved vendor stores
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+  - search: string (search by store name)
+  - featured: boolean (filter featured stores)
+  - city: string (filter by city)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Stores retrieved successfully",
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 1,
+                "store_name": "John's Electronics Store",
+                "store_slug": "johns-electronics-store",
+                "store_description": "Best electronics store in town",
+                "store_logo_url": "https://example.com/storage/vendor/logo.jpg",
+                "store_banner_url": "https://example.com/storage/vendor/banner.jpg",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "is_featured": true,
+                "total_products": 45,
+                "owner_name": "John Doe"
+            }
+        ],
+        "per_page": 15,
+        "total": 25,
+        "last_page": 2
+    }
+}
+
+--------------------------------------------------------------------------------
+18. GET FEATURED STORES
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/featured
+Auth: Not Required (Public)
+Description: Get list of featured vendor stores
+Query Parameters:
+  - limit: integer (default: 10, max: 20)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Featured stores retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "store_description": "Best electronics store in town",
+            "store_logo_url": "https://example.com/storage/vendor/logo.jpg",
+            "store_banner_url": "https://example.com/storage/vendor/banner.jpg",
+            "city": "Mumbai",
+            "total_products": 45
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+19. GET STORE DETAILS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/{slug}
+Auth: Not Required (Public)
+Description: Get detailed information about a specific store
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store details retrieved successfully",
+    "data": {
+        "id": 1,
+        "store_name": "John's Electronics Store",
+        "store_slug": "johns-electronics-store",
+        "store_description": "Best electronics store in town",
+        "store_logo_url": "https://example.com/storage/vendor/logo.jpg",
+        "store_banner_url": "https://example.com/storage/vendor/banner.jpg",
+        "business_email": "business@example.com",
+        "business_phone": "9876543210",
+        "business_address": "123 Main Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "country": "India",
+        "postal_code": "400001",
+        "is_featured": true,
+        "social_links": {
+            "facebook": "https://facebook.com/store",
+            "instagram": "https://instagram.com/store"
+        },
+        "total_products": 45,
+        "owner_name": "John Doe",
+        "member_since": "January 2024"
+    }
+}
+
+--------------------------------------------------------------------------------
+20. GET STORE PRODUCTS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/{slug}/products
+Auth: Not Required (Public)
+Description: Get products from a specific store
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+  - category_id: integer
+  - search: string
+  - sort_by: string (name, price, created_at)
+  - sort_order: string (asc, desc)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store products retrieved successfully",
+    "data": {
+        "store": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store",
+            "store_logo_url": "https://example.com/storage/vendor/logo.jpg"
+        },
+        "products": {
+            "current_page": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Product Name",
+                    "selling_price": 1000.00,
+                    "mrp": 1200.00,
+                    "main_photo": { ... },
+                    "variations": [ ... ]
+                }
+            ],
+            "per_page": 15,
+            "total": 45,
+            "last_page": 3
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+21. GET STORE CATEGORIES
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/{slug}/categories
+Auth: Not Required (Public)
+Description: Get categories available in a specific store
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store categories retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Electronics",
+            "description": "Electronic items",
+            "image_url": "https://example.com/storage/categories/1.jpg",
+            "subcategories": [
+                {"id": 1, "name": "Mobiles"},
+                {"id": 2, "name": "Laptops"}
+            ]
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+22. GET STORE REVIEWS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/{slug}/reviews
+Auth: Not Required (Public)
+Description: Get reviews for a specific store
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store reviews retrieved successfully",
+    "data": {
+        "store": {
+            "id": 1,
+            "store_name": "John's Electronics Store",
+            "store_slug": "johns-electronics-store"
+        },
+        "statistics": {
+            "average_rating": 4.5,
+            "total_reviews": 128,
+            "rating_breakdown": {
+                "5": 80,
+                "4": 30,
+                "3": 10,
+                "2": 5,
+                "1": 3
+            }
+        },
+        "reviews": {
+            "current_page": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "rating": 5,
+                    "title": "Great store!",
+                    "comment": "Excellent products and service",
+                    "user": {
+                        "id": 1,
+                        "name": "Customer Name"
+                    },
+                    "vendor_reply": "Thank you for your feedback!",
+                    "vendor_replied_at": "2024-01-16T10:30:00Z",
+                    "is_verified_purchase": true,
+                    "created_at": "2024-01-15T10:30:00Z"
+                }
+            ],
+            "per_page": 15,
+            "total": 128,
+            "last_page": 9
+        }
+    }
+}
+
+================================================================================
+                        STORE FOLLOW/UNFOLLOW APIs
+================================================================================
+
+--------------------------------------------------------------------------------
+23. FOLLOW A STORE
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/stores/{slug}/follow
+Auth: Required (Bearer Token)
+Description: Follow a vendor store
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store followed successfully",
+    "data": {
+        "is_following": true,
+        "followers_count": 156
+    }
+}
+
+Response (400 Bad Request - Already Following):
+{
+    "success": false,
+    "message": "You are already following this store"
+}
+
+--------------------------------------------------------------------------------
+24. UNFOLLOW A STORE
+--------------------------------------------------------------------------------
+Endpoint: DELETE /api/v1/stores/{slug}/unfollow
+Auth: Required (Bearer Token)
+Description: Unfollow a vendor store
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Store unfollowed successfully",
+    "data": {
+        "is_following": false,
+        "followers_count": 155
+    }
+}
+
+--------------------------------------------------------------------------------
+25. CHECK IF FOLLOWING A STORE
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/stores/{slug}/is-following
+Auth: Required (Bearer Token)
+Description: Check if the authenticated user is following a store
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Follow status retrieved successfully",
+    "data": {
+        "is_following": true,
+        "followers_count": 156
+    }
+}
+
+--------------------------------------------------------------------------------
+26. GET MY FOLLOWED STORES
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/my-followed-stores
+Auth: Required (Bearer Token)
+Description: Get list of stores the authenticated user is following
+Query Parameters:
+  - page: integer (default: 1)
+  - per_page: integer (default: 15, max: 50)
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Followed stores retrieved successfully",
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 1,
+                "store_name": "John's Electronics Store",
+                "store_slug": "johns-electronics-store",
+                "store_description": "Best electronics store in town",
+                "store_logo_url": "https://example.com/storage/vendor/logo.jpg",
+                "city": "Mumbai",
+                "total_products": 45,
+                "is_following": true
+            }
+        ],
+        "per_page": 15,
+        "total": 5,
+        "last_page": 1
+    }
+}
+
+================================================================================
+                              COUPON APIs
+================================================================================
+
+--------------------------------------------------------------------------------
+27. VALIDATE COUPON
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/coupons/validate
+Auth: Optional (Works with or without auth)
+Description: Validate a coupon code and calculate discount
+
+Request Body:
+{
+    "code": "SAVE20",
+    "cart_total": 1000.00
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Coupon is valid",
+    "data": {
+        "coupon": {
+            "id": 1,
+            "code": "SAVE20",
+            "description": "Save 20% on your order",
+            "discount_type": "percentage",
+            "discount_value": 20,
+            "formatted_discount": "20%",
+            "min_order_amount": 500.00,
+            "max_discount_amount": 200.00
+        },
+        "cart_total": 1000.00,
+        "discount_amount": 200.00,
+        "final_total": 800.00
+    }
+}
+
+Response (400 Bad Request - Invalid Coupon):
+{
+    "success": false,
+    "message": "Invalid coupon code"
+}
+
+--------------------------------------------------------------------------------
+28. GET AVAILABLE COUPONS
+--------------------------------------------------------------------------------
+Endpoint: GET /api/v1/coupons/available
+Auth: Optional
+Description: Get list of available coupons
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Available coupons retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "code": "SAVE20",
+            "description": "Save 20% on your order",
+            "discount_type": "percentage",
+            "discount_value": 20,
+            "formatted_discount": "20%",
+            "min_order_amount": 500.00,
+            "max_discount_amount": 200.00,
+            "valid_from": "2024-01-01",
+            "valid_until": "2024-12-31"
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+29. APPLY COUPON TO CART
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/coupons/apply
+Auth: Required (Bearer Token)
+Description: Apply a coupon code to the user's cart
+
+Request Body:
+{
+    "code": "SAVE20"
+}
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Coupon applied successfully",
+    "data": {
+        "coupon": {
+            "id": 1,
+            "code": "SAVE20",
+            "discount_type": "percentage",
+            "discount_value": 20
+        },
+        "cart_total": 1000.00,
+        "discount_amount": 200.00,
+        "final_total": 800.00
+    }
+}
+
+--------------------------------------------------------------------------------
+30. REMOVE COUPON FROM CART
+--------------------------------------------------------------------------------
+Endpoint: POST /api/v1/coupons/remove
+Auth: Required (Bearer Token)
+Description: Remove applied coupon from the user's cart
+
+Response (200 OK):
+{
+    "success": true,
+    "message": "Coupon removed successfully",
+    "data": {
+        "cart_total": 1000.00
+    }
+}
+
+================================================================================
+                           ERROR RESPONSES
+================================================================================
+
+Authentication Error (401 Unauthorized):
+{
+    "success": false,
+    "message": "Unauthenticated"
+}
+
+Validation Error (422 Unprocessable Entity):
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "field_name": ["Error message for field"]
+    }
+}
+
+Not Found Error (404 Not Found):
+{
+    "success": false,
+    "message": "Resource not found"
+}
+
+Forbidden Error (403 Forbidden):
+{
+    "success": false,
+    "message": "You do not have permission to perform this action"
+}
+
+Server Error (500 Internal Server Error):
+{
+    "success": false,
+    "message": "An error occurred while processing your request"
+}
+
+================================================================================
+                              API SUMMARY
+================================================================================
+
+VENDOR AUTHENTICATION (2 endpoints):
+  1. POST   /api/v1/vendor/register         - Register as vendor
+  2. POST   /api/v1/vendor/login            - Vendor login
+
+VENDOR DASHBOARD (2 endpoints):
+  3. GET    /api/v1/vendor/dashboard        - Dashboard statistics
+  4. GET    /api/v1/vendor/analytics        - Detailed analytics
+
+VENDOR PROFILE (5 endpoints):
+  5. GET    /api/v1/vendor/profile          - Get profile
+  6. PUT    /api/v1/vendor/profile          - Update profile
+  7. POST   /api/v1/vendor/store-logo       - Upload logo
+  8. POST   /api/v1/vendor/store-banner     - Upload banner
+  9. PUT    /api/v1/vendor/bank-details     - Update bank details
+
+VENDOR PRODUCTS (5 endpoints):
+  10. GET   /api/v1/vendor/products         - List products
+  11. POST  /api/v1/vendor/products         - Create product
+  12. PUT   /api/v1/vendor/products/{id}    - Update product
+  13. DELETE /api/v1/vendor/products/{id}   - Delete product
+  14. GET   /api/v1/vendor/products/low-stock - Low stock products
+
+VENDOR ORDERS (2 endpoints):
+  15. GET   /api/v1/vendor/orders           - List orders
+  16. GET   /api/v1/vendor/orders/{id}      - Order details
+
+PUBLIC STORES (6 endpoints):
+  17. GET   /api/v1/stores                  - List all stores
+  18. GET   /api/v1/stores/featured         - Featured stores
+  19. GET   /api/v1/stores/{slug}           - Store details
+  20. GET   /api/v1/stores/{slug}/products  - Store products
+  21. GET   /api/v1/stores/{slug}/categories - Store categories
+  22. GET   /api/v1/stores/{slug}/reviews   - Store reviews
+
+STORE FOLLOW (4 endpoints):
+  23. POST  /api/v1/stores/{slug}/follow    - Follow store
+  24. DELETE /api/v1/stores/{slug}/unfollow - Unfollow store
+  25. GET   /api/v1/stores/{slug}/is-following - Check follow status
+  26. GET   /api/v1/my-followed-stores      - My followed stores
+
+COUPONS (4 endpoints):
+  27. POST  /api/v1/coupons/validate        - Validate coupon
+  28. GET   /api/v1/coupons/available       - Available coupons
+  29. POST  /api/v1/coupons/apply           - Apply coupon
+  30. POST  /api/v1/coupons/remove          - Remove coupon
+
+TOTAL: 30 API Endpoints
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================

@@ -24,6 +24,14 @@ use App\Http\Controllers\API\AppConfigController;
 use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\WishlistController;
+use App\Http\Controllers\API\VendorController;
+use App\Http\Controllers\API\StoreController;
+use App\Http\Controllers\API\CouponController;
+use App\Http\Controllers\API\CustomerAuthController;
+use App\Http\Controllers\API\CustomerStoreController;
+use App\Http\Controllers\API\VendorCustomerController;
+use App\Http\Controllers\API\CustomerCartController;
+use App\Http\Controllers\API\CustomerInvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +79,32 @@ Route::prefix('v1')->group(function () {
     
     // Home/Dashboard route (public - works with or without auth)
     Route::get('/home', [HomeController::class, 'index']);
+    
+    // =============================================
+    // PUBLIC STORE ROUTES (Browse Vendors/Stores)
+    // =============================================
+    Route::prefix('stores')->group(function () {
+        Route::get('/', [StoreController::class, 'index']);                          // List all stores
+        Route::get('/featured', [StoreController::class, 'featured']);               // Featured vendors
+        Route::get('/{slug}', [StoreController::class, 'show']);                     // Store details by slug
+        Route::get('/{slug}/products', [StoreController::class, 'products']);        // Store products
+        Route::get('/{slug}/categories', [StoreController::class, 'categories']);    // Store categories
+        Route::get('/{slug}/reviews', [StoreController::class, 'reviews']);          // Store reviews
+    });
+    
+    // Public coupon validation
+    Route::post('/coupons/validate', [CouponController::class, 'validateCoupon']);
+    Route::get('/coupons/available', [CouponController::class, 'available']);
+    
+    // Vendor Registration (public)
+    Route::post('/vendor/register', [VendorController::class, 'register']);
+    Route::post('/vendor/login', [VendorController::class, 'login']);
+    
+    // =============================================
+    // VENDOR CUSTOMER AUTH ROUTES (Public)
+    // =============================================
+    // Customer login - requires vendor_slug to identify which vendor's customer
+    Route::post('/customer/login', [CustomerAuthController::class, 'login']);
 });
 
 // Protected API routes
@@ -108,6 +142,16 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::post('/cart/generate-invoice', [CartController::class, 'generateInvoice']);
     Route::delete('/cart/clear', [CartController::class, 'clear']);
     
+    // Coupon routes (authenticated)
+    Route::post('/coupons/apply', [CouponController::class, 'apply']);
+    Route::post('/coupons/remove', [CouponController::class, 'remove']);
+    
+    // Store follow/unfollow routes (authenticated)
+    Route::post('/stores/{slug}/follow', [StoreController::class, 'follow']);
+    Route::delete('/stores/{slug}/unfollow', [StoreController::class, 'unfollow']);
+    Route::get('/stores/{slug}/is-following', [StoreController::class, 'isFollowing']);
+    Route::get('/my-followed-stores', [StoreController::class, 'myFollowedStores']);
+    
     // My Invoices routes (user-specific invoices)
     Route::get('/my-invoices', [MyInvoiceController::class, 'index']);
     Route::get('/my-invoices/{id}', [MyInvoiceController::class, 'show']);
@@ -123,6 +167,46 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::post('/notifications/register-device', [NotificationController::class, 'registerDeviceToken']);
+    
+    // =============================================
+    // VENDOR API ROUTES (Vendor Dashboard APIs)
+    // =============================================
+    Route::prefix('vendor')->group(function () {
+        // Dashboard & Analytics
+        Route::get('/dashboard', [VendorController::class, 'dashboard']);
+        Route::get('/analytics', [VendorController::class, 'analytics']);
+        
+        // Profile & Store Settings
+        Route::get('/profile', [VendorController::class, 'profile']);
+        Route::put('/profile', [VendorController::class, 'updateProfile']);
+        Route::post('/store-logo', [VendorController::class, 'uploadStoreLogo']);
+        Route::post('/store-banner', [VendorController::class, 'uploadStoreBanner']);
+        Route::put('/bank-details', [VendorController::class, 'updateBankDetails']);
+        
+        // Products Management
+        Route::get('/products', [VendorController::class, 'products']);
+        Route::post('/products', [VendorController::class, 'createProduct']);
+        Route::put('/products/{id}', [VendorController::class, 'updateProduct']);
+        Route::delete('/products/{id}', [VendorController::class, 'deleteProduct']);
+        Route::get('/products/low-stock', [VendorController::class, 'lowStockProducts']);
+        
+        // Orders Management
+        Route::get('/orders', [VendorController::class, 'orders']);
+        Route::get('/orders/{id}', [VendorController::class, 'orderDetails']);
+        
+        // =============================================
+        // VENDOR CUSTOMER MANAGEMENT ROUTES
+        // Vendors can create customers with login credentials
+        // These customers can only see this vendor's products
+        // =============================================
+        Route::get('/customers', [VendorCustomerController::class, 'index']);
+        Route::post('/customers', [VendorCustomerController::class, 'store']);
+        Route::get('/customers/{id}', [VendorCustomerController::class, 'show']);
+        Route::put('/customers/{id}', [VendorCustomerController::class, 'update']);
+        Route::delete('/customers/{id}', [VendorCustomerController::class, 'destroy']);
+        Route::put('/customers/{id}/reset-password', [VendorCustomerController::class, 'resetPassword']);
+        Route::put('/customers/{id}/toggle-status', [VendorCustomerController::class, 'toggleStatus']);
+    });
     
     // =============================================
     // ADMIN API ROUTES (Existing Admin Panel APIs)
@@ -153,4 +237,42 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::apiResource('pages', PageController::class)->except(['index', 'show']);
     Route::apiResource('user-groups', UserGroupController::class);
     Route::apiResource('user-group-members', UserGroupMemberController::class);
+});
+
+// =============================================
+// VENDOR CUSTOMER PROTECTED ROUTES
+// These routes are for customers created by vendors
+// Customers can only see products from their vendor
+// =============================================
+Route::prefix('v1/customer')->middleware(['auth:sanctum', 'vendor.customer'])->group(function () {
+    // Customer Auth
+    Route::post('/logout', [CustomerAuthController::class, 'logout']);
+    Route::get('/profile', [CustomerAuthController::class, 'profile']);
+    Route::put('/profile', [CustomerAuthController::class, 'updateProfile']);
+    Route::put('/change-password', [CustomerAuthController::class, 'changePassword']);
+    
+    // Customer Store - Only shows vendor's products
+    Route::get('/home', [CustomerStoreController::class, 'home']);
+    Route::get('/products', [CustomerStoreController::class, 'products']);
+    Route::get('/products/{id}', [CustomerStoreController::class, 'productDetails']);
+    Route::get('/categories', [CustomerStoreController::class, 'categories']);
+    Route::get('/categories/{id}/subcategories', [CustomerStoreController::class, 'subcategories']);
+    Route::get('/search', [CustomerStoreController::class, 'search']);
+    
+    // Customer Cart - Cart for vendor customers
+    Route::get('/cart', [CustomerCartController::class, 'index']);
+    Route::get('/cart/count', [CustomerCartController::class, 'count']);
+    Route::post('/cart/add', [CustomerCartController::class, 'add']);
+    Route::delete('/cart/clear', [CustomerCartController::class, 'clear']);
+    Route::post('/cart/generate-invoice', [CustomerCartController::class, 'generateInvoice']);
+    Route::put('/cart/{id}', [CustomerCartController::class, 'update']);
+    Route::delete('/cart/{id}', [CustomerCartController::class, 'remove']);
+    
+    // Customer Invoices - Invoices for vendor customers
+    Route::get('/invoices', [CustomerInvoiceController::class, 'index']);
+    Route::get('/invoices/{id}', [CustomerInvoiceController::class, 'show']);
+    Route::get('/invoices/{id}/download-pdf', [CustomerInvoiceController::class, 'downloadPdf']);
+    Route::post('/invoices/{id}/add-to-cart', [CustomerInvoiceController::class, 'addToCart']);
+    Route::delete('/invoices/{id}', [CustomerInvoiceController::class, 'destroy']);
+    Route::delete('/invoices/{id}/items/{productId}', [CustomerInvoiceController::class, 'removeItem']);
 });

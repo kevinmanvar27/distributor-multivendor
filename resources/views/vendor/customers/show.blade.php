@@ -12,11 +12,39 @@
             
             <div class="pt-4 pb-2 mb-3">
                 <!-- Back Button -->
-                <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
                     <a href="{{ route('vendor.customers.index') }}" class="btn btn-outline-secondary rounded-pill">
                         <i class="fas fa-arrow-left me-2"></i>Back to Customers
                     </a>
+                    <div>
+                        <a href="{{ route('vendor.customers.edit', $customer->id) }}" class="btn btn-outline-primary rounded-pill me-2">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                        <form action="{{ route('vendor.customers.destroy', $customer->id) }}" method="POST" class="d-inline" 
+                              onsubmit="return confirm('Are you sure you want to delete this customer?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger rounded-pill">
+                                <i class="fas fa-trash me-2"></i>Delete
+                            </button>
+                        </form>
+                    </div>
                 </div>
+
+                <!-- Success/Error Messages -->
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
 
                 <div class="row">
                     <!-- Customer Info Card -->
@@ -28,28 +56,51 @@
                                     {{ strtoupper(substr($customer->name, 0, 1)) }}
                                 </div>
                                 <h4 class="fw-bold mb-1">{{ $customer->name }}</h4>
-                                <p class="text-muted mb-3">{{ $customer->email }}</p>
+                                <p class="text-muted mb-2">{{ $customer->email }}</p>
+                                
+                                @if($customer->is_active)
+                                    <span class="badge bg-success mb-3">Active</span>
+                                @else
+                                    <span class="badge bg-danger mb-3">Inactive</span>
+                                @endif
                                 
                                 <hr>
                                 
                                 <div class="text-start">
                                     <div class="mb-3">
                                         <label class="text-muted small">Phone</label>
-                                        <div class="fw-medium">{{ $customer->mobile_number ?? $customer->phone ?? 'Not provided' }}</div>
+                                        <div class="fw-medium">{{ $customer->mobile_number ?? 'Not provided' }}</div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">Address</label>
-                                        <div class="fw-medium">{{ $customer->address ?? 'Not provided' }}</div>
+                                        <div class="fw-medium">
+                                            @if($customer->address)
+                                                {{ $customer->address }}<br>
+                                                @if($customer->city || $customer->state || $customer->postal_code)
+                                                    {{ $customer->city }}{{ $customer->city && $customer->state ? ', ' : '' }}{{ $customer->state }} {{ $customer->postal_code }}
+                                                @endif
+                                            @else
+                                                Not provided
+                                            @endif
+                                        </div>
                                     </div>
-                                    @if(isset($customerSince))
+                                    <div class="mb-3">
+                                        <label class="text-muted small">Discount</label>
+                                        <div class="fw-medium">{{ $customer->discount_percentage ?? 0 }}%</div>
+                                    </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">Customer Since</label>
                                         <div class="fw-medium">{{ $customerSince->format('M d, Y') }}</div>
                                     </div>
-                                    @endif
                                     <div class="mb-3">
-                                        <label class="text-muted small">Account Created</label>
-                                        <div class="fw-medium">{{ $customer->created_at->format('M d, Y h:i A') }}</div>
+                                        <label class="text-muted small">Last Login</label>
+                                        <div class="fw-medium">
+                                            @if($customer->last_login_at)
+                                                {{ $customer->last_login_at->format('M d, Y h:i A') }}
+                                            @else
+                                                Never logged in
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -67,6 +118,27 @@
                                     <span class="text-muted">Total Spent</span>
                                     <span class="fw-bold text-success">₹{{ number_format($totalSpent, 2) }}</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Card -->
+                        <div class="card border-0 shadow-sm mt-4">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Quick Actions</h6>
+                                
+                                <!-- Toggle Status -->
+                                <form action="{{ route('vendor.customers.toggle-status', $customer->id) }}" method="POST" class="mb-3">
+                                    @csrf
+                                    <button type="submit" class="btn btn-{{ $customer->is_active ? 'warning' : 'success' }} w-100 rounded-pill">
+                                        <i class="fas fa-{{ $customer->is_active ? 'ban' : 'check' }} me-2"></i>
+                                        {{ $customer->is_active ? 'Deactivate Customer' : 'Activate Customer' }}
+                                    </button>
+                                </form>
+                                
+                                <!-- Reset Password -->
+                                <button type="button" class="btn btn-outline-secondary w-100 rounded-pill" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                    <i class="fas fa-key me-2"></i>Reset Password
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -154,6 +226,36 @@
                 </div>
             </div>
         </main>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('vendor.customers.reset-password', $customer->id) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetPasswordModalLabel">Reset Customer Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">New Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password_confirmation" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required minlength="6">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill">Reset Password</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection

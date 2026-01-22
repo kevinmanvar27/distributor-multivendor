@@ -294,4 +294,61 @@ class Vendor extends Model
     {
         return $this->customers()->count();
     }
+
+    /**
+     * Get the followers for the vendor.
+     */
+    public function followers()
+    {
+        return $this->hasMany(VendorFollower::class);
+    }
+
+    /**
+     * Get the users who follow this vendor.
+     */
+    public function followingUsers()
+    {
+        return $this->belongsToMany(User::class, 'vendor_followers', 'vendor_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the payouts for the vendor.
+     */
+    public function payouts()
+    {
+        return $this->hasMany(VendorPayout::class);
+    }
+
+    /**
+     * Get the reviews for the vendor.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(VendorReview::class);
+    }
+
+    /**
+     * Get total followers count.
+     */
+    public function getTotalFollowersAttribute()
+    {
+        return $this->followers()->count();
+    }
+
+    /**
+     * Get average rating.
+     */
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->approved()->avg('rating') ?? 0;
+    }
+
+    /**
+     * Get total reviews count.
+     */
+    public function getTotalReviewsAttribute()
+    {
+        return $this->reviews()->approved()->count();
+    }
 }

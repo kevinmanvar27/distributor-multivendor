@@ -17,6 +17,7 @@ class ShoppingCartItem extends Model
      */
     protected $fillable = [
         'user_id',
+        'vendor_customer_id',
         'session_id',
         'product_id',
         'product_variation_id',
@@ -39,6 +40,14 @@ class ShoppingCartItem extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the vendor customer that owns the cart item.
+     */
+    public function vendorCustomer()
+    {
+        return $this->belongsTo(VendorCustomer::class);
     }
 
     /**
@@ -88,6 +97,18 @@ class ShoppingCartItem extends Model
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope a query to only include cart items for a vendor customer.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $vendorCustomerId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForVendorCustomer($query, $vendorCustomerId)
+    {
+        return $query->where('vendor_customer_id', $vendorCustomerId);
     }
 
     /**

@@ -27,9 +27,9 @@
                 @endif
                 <h1 class="fw-bold mb-2" style="color: white !important;">{{ $vendor->store_name }}</h1>
                 @if($vendor->store_description)
-                    <p class="mb-3 opacity-75">{{ Str::limit($vendor->store_description, 150) }}</p>
+                    <p class="mb-3 opacity-75 text-white">{{ Str::limit($vendor->store_description, 150) }}</p>
                 @endif
-                <a href="{{ route('frontend.home') }}" class="btn btn-outline-light btn-sm rounded-pill px-4">
+                <a href="{{ route('frontend.home') }}" class="btn btn-outline-light btn-sm rounded-pill px-4 text-white">
                     <i class="fas fa-arrow-left me-2"></i>Back to Main Store
                 </a>
             </div>

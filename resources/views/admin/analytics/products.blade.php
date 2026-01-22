@@ -324,7 +324,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <span class="badge bg-{{ $index < 3 ? 'warning' : 'secondary' }} me-2">{{ $index + 1 }}</span>
                                                         @if($item->product && $item->product->mainPhoto)
-                                                            <img src="{{ asset('storage/' . $item->product->mainPhoto->file_path) }}" alt="{{ $item->product->name }}" class="product-thumb me-2">
+                                                            <img src="{{ $item->product->mainPhoto->url }}" alt="{{ $item->product->name }}" class="product-thumb me-2">
                                                         @else
                                                             <div class="product-thumb bg-light d-flex align-items-center justify-content-center me-2">
                                                                 <i class="fas fa-image text-muted"></i>
@@ -389,7 +389,7 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         @if($item->product && $item->product->mainPhoto)
-                                                            <img src="{{ asset('storage/' . $item->product->mainPhoto->file_path) }}" alt="{{ $item->product->name }}" class="product-thumb me-2">
+                                                            <img src="{{ $item->product->mainPhoto->url }}" alt="{{ $item->product->name }}" class="product-thumb me-2">
                                                         @else
                                                             <div class="product-thumb bg-light d-flex align-items-center justify-content-center me-2">
                                                                 <i class="fas fa-image text-muted"></i>
@@ -441,7 +441,7 @@
                                     <div class="col-md-3 col-sm-6">
                                         <div class="border rounded p-2 d-flex align-items-center">
                                             @if($product->mainPhoto)
-                                                <img src="{{ asset('storage/' . $product->mainPhoto->file_path) }}" alt="{{ $product->name }}" class="product-thumb me-2">
+                                                <img src="{{ $product->mainPhoto->url }}" alt="{{ $product->name }}" class="product-thumb me-2">
                                             @else
                                                 <div class="product-thumb bg-light d-flex align-items-center justify-content-center me-2">
                                                     <i class="fas fa-image text-muted"></i>
@@ -601,7 +601,7 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         @if($data['product']->mainPhoto)
-                                                            <img src="{{ asset('storage/' . $data['product']->mainPhoto->file_path) }}" alt="{{ $data['product']->name }}" class="product-thumb me-2">
+                                                            <img src="{{ $data['product']->mainPhoto->url }}" alt="{{ $data['product']->name }}" class="product-thumb me-2">
                                                         @else
                                                             <div class="product-thumb bg-light d-flex align-items-center justify-content-center me-2">
                                                                 <i class="fas fa-image text-muted"></i>

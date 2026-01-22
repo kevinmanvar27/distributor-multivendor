@@ -13,6 +13,7 @@ use App\Http\Middleware\ForceJsonResponse;
 
 use App\Http\Middleware\VendorMiddleware;
 use App\Http\Middleware\CheckVendorPermission;
+use App\Http\Middleware\EnsureVendorCustomer;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'frontend.access' => \App\Http\Middleware\CheckFrontendAccess::class,
             'vendor' => VendorMiddleware::class,
             'vendor.permission' => CheckVendorPermission::class,
+            'vendor.customer' => EnsureVendorCustomer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

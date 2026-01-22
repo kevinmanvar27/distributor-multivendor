@@ -201,7 +201,14 @@ Route::prefix('vendor')->name('vendor.')->middleware(['auth', 'vendor'])->group(
     
     // Customer Management
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('customers/{id}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    Route::post('customers/{customer}/toggle-status', [CustomerController::class, 'toggleStatus'])->name('customers.toggle-status');
+    Route::post('customers/{customer}/reset-password', [CustomerController::class, 'resetPassword'])->name('customers.reset-password');
     
     // Staff Management
     Route::get('staff', [StaffController::class, 'index'])->name('staff.index');

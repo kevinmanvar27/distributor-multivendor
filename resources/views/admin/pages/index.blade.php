@@ -45,7 +45,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @forelse($pages as $page)
+                                            @foreach($pages as $page)
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center">
@@ -82,17 +82,7 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                            @empty
-                                            <tr>
-                                                <td colspan="5" class="text-center py-5">
-                                                    <div class="text-muted">
-                                                        <i class="fas fa-file-alt fa-2x mb-3"></i>
-                                                        <p class="mb-0">No pages found</p>
-                                                        <p class="small">Get started by creating a new page</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            @endforelse
+                                            @endforeach
                                         </tbody>
                                     </table>
                                 </div>
@@ -135,24 +125,12 @@
                 "info": "Showing _START_ to _END_ of _TOTAL_ pages",
                 "infoEmpty": "Showing 0 to 0 of 0 pages",
                 "infoFiltered": "(filtered from _MAX_ total pages)",
+                "emptyTable": "<div class='text-muted py-4'><i class='fas fa-file-alt fa-2x mb-3'></i><p class='mb-0'>No pages found</p><p class='small'>Get started by creating a new page</p></div>",
                 "paginate": {
                     "first": "First",
                     "last": "Last",
                     "next": "Next",
                     "previous": "Previous"
-                }
-            },
-            "aoColumns": [
-                null, // Title
-                null, // Slug
-                null, // Priority
-                null, // Status
-                null  // Actions
-            ],
-            "preDrawCallback": function(settings) {
-                // Ensure consistent column count
-                if ($('#pages-table tbody tr').length === 0) {
-                    $('#pages-table tbody').html('<tr><td colspan="5" class="text-center py-5"><div class="text-muted"><i class="fas fa-file-alt fa-2x mb-3"></i><p class="mb-0">No pages found</p><p class="small">Get started by creating a new page</p></div></td></tr>');
                 }
             }
         });

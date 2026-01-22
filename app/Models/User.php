@@ -31,6 +31,7 @@ class User extends Authenticatable
         'mobile_number',
         'is_approved',
         'discount_percentage',
+        'wallet_balance',
     ];
 
     /**
@@ -438,5 +439,69 @@ class User extends Authenticatable
     public function scopeMainStoreCustomers($query)
     {
         return $query->whereNull('vendor_id')->where('user_role', 'user');
+    }
+    
+    /**
+     * Get the referrals made by this user (as referrer).
+     */
+    public function referralsMade()
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+    
+    /**
+     * Get the referral that brought this user (as referred).
+     */
+    public function referredBy()
+    {
+        return $this->hasOne(Referral::class, 'referred_id');
+    }
+    
+    /**
+     * Get wallet transactions for the user.
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class)->orderBy('created_at', 'desc');
+    }
+    
+    /**
+     * Credit amount to user's wallet.
+     */
+    public function creditWallet(float $amount, string $description, ?string $referenceType = null, ?int $referenceId = null): WalletTransaction
+    {
+        $this->increment('wallet_balance', $amount);
+        $this->refresh();
+        
+        return $this->walletTransactions()->create([
+            'type' => 'credit',
+            'amount' => $amount,
+            'balance_after' => $this->wallet_balance,
+            'description' => $description,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+        ]);
+    }
+    
+    /**
+     * Debit amount from user's wallet.
+     */
+    public function debitWallet(float $amount, string $description, ?string $referenceType = null, ?int $referenceId = null): ?WalletTransaction
+    {
+        if ($this->wallet_balance < $amount) {
+            return null; // Insufficient balance
+        }
+        
+        $this->decrement('wallet_balance', $amount);
+        $this->refresh();
+        
+        return $this->walletTransactions()->create([
+            'type' => 'debit',
+            'amount' => $amount,
+            'balance_after' => $this->wallet_balance,
+            'description' => $description,
+            'reference_type' => $referenceType,
+            'reference_id' => $referenceId,
+        ]);
     }
 }

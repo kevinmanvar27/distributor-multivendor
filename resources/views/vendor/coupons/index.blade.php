@@ -42,8 +42,8 @@
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                                            <i class="fas fa-ticket-alt text-primary"></i>
+                                        <div class="bg-primary rounded-circle p-3">
+                                            <i class="fas fa-ticket-alt text-white"></i>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
@@ -59,8 +59,8 @@
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
-                                            <i class="fas fa-check-circle text-success"></i>
+                                        <div class="bg-success rounded-circle p-3">
+                                            <i class="fas fa-check-circle text-white"></i>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
@@ -76,8 +76,8 @@
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="bg-info bg-opacity-10 rounded-circle p-3">
-                                            <i class="fas fa-percent text-info"></i>
+                                        <div class="bg-info rounded-circle p-3">
+                                            <i class="fas fa-percent text-white"></i>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
@@ -93,8 +93,8 @@
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="bg-warning bg-opacity-10 rounded-circle p-3">
-                                            <i class="fas fa-rupee-sign text-warning"></i>
+                                        <div class="bg-warning rounded-circle p-3">
+                                            <i class="fas fa-rupee-sign text-white"></i>
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">

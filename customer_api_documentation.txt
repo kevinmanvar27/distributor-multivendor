@@ -1,0 +1,1690 @@
+================================================================================
+                    VENDOR CUSTOMER API DOCUMENTATION
+================================================================================
+
+Base URL: http://127.0.0.1:8000/api/v1
+
+This document contains all API endpoints for the Vendor-Customer system where:
+- Vendors can create customers with login credentials
+- Customers can login and ONLY see products from their assigned vendor
+- Customers get personalized discount pricing
+
+================================================================================
+                        SECTION 1: CUSTOMER AUTHENTICATION
+================================================================================
+
+--------------------------------------------------------------------------------
+1.1 CUSTOMER LOGIN
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/customer/login
+Auth:       None (Public)
+Description: Authenticate a vendor customer and get access token
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+
+REQUEST BODY:
+{
+    "email": "customer@example.com",
+    "password": "Password123",
+    "vendor_slug": "store-name"    // OPTIONAL - if not provided, searches by email
+}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "customer@example.com",
+            "mobile_number": "9876543210",
+            "address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "postal_code": "400001",
+            "discount_percentage": 10,
+            "last_login_at": "2025-01-22T10:30:00.000000Z"
+        },
+        "vendor": {
+            "id": 5,
+            "store_name": "Jigo Store",
+            "store_slug": "jigo",
+            "store_logo_url": "https://example.com/logo.png"
+        },
+        "token": "1|abc123xyz...",
+        "token_type": "Bearer"
+    }
+}
+
+ERROR RESPONSES:
+- 401 Invalid credentials:
+{
+    "success": false,
+    "message": "Invalid credentials",
+    "data": null
+}
+
+- 403 Account inactive:
+{
+    "success": false,
+    "message": "Your account has been deactivated. Please contact the vendor.",
+    "data": null
+}
+
+- 404 Vendor not found (when vendor_slug provided):
+{
+    "success": false,
+    "message": "Vendor not found",
+    "data": null
+}
+
+- 422 Validation error:
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "email": ["The email field is required."],
+        "password": ["The password field is required."]
+    }
+}
+
+--------------------------------------------------------------------------------
+1.2 CUSTOMER LOGOUT
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/customer/logout
+Auth:       Bearer Token (Customer)
+Description: Logout and invalidate current token
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY: None
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Logged out successfully",
+    "data": null
+}
+
+ERROR RESPONSE (401):
+{
+    "message": "Unauthenticated."
+}
+
+--------------------------------------------------------------------------------
+1.3 GET CUSTOMER PROFILE
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/profile
+Auth:       Bearer Token (Customer)
+Description: Get authenticated customer's profile and vendor info
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY: None
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Profile retrieved successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "customer@example.com",
+            "mobile_number": "9876543210",
+            "address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "postal_code": "400001",
+            "discount_percentage": 10,
+            "created_at": "2025-01-20T10:00:00.000000Z",
+            "last_login_at": "2025-01-22T10:30:00.000000Z"
+        },
+        "vendor": {
+            "id": 5,
+            "store_name": "Jigo Store",
+            "store_slug": "jigo",
+            "store_logo_url": "https://example.com/logo.png",
+            "business_phone": "9876543210",
+            "business_email": "vendor@example.com"
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+1.4 UPDATE CUSTOMER PROFILE
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/customer/profile
+Auth:       Bearer Token (Customer)
+Description: Update customer's own profile (cannot change email/discount)
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY:
+{
+    "name": "John Doe Updated",
+    "mobile_number": "9876543211",
+    "address": "456 New Street",
+    "city": "Delhi",
+    "state": "Delhi",
+    "postal_code": "110001"
+}
+
+Note: All fields are optional. Only send fields you want to update.
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Profile updated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe Updated",
+            "email": "customer@example.com",
+            "mobile_number": "9876543211",
+            "address": "456 New Street",
+            "city": "Delhi",
+            "state": "Delhi",
+            "postal_code": "110001"
+        }
+    }
+}
+
+ERROR RESPONSE (422):
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "name": ["The name must be a string."]
+    }
+}
+
+--------------------------------------------------------------------------------
+1.5 CHANGE CUSTOMER PASSWORD
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/customer/change-password
+Auth:       Bearer Token (Customer)
+Description: Change customer's password (requires current password)
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY:
+{
+    "current_password": "OldPassword123",
+    "password": "NewPassword123",
+    "password_confirmation": "NewPassword123"
+}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Password changed successfully",
+    "data": null
+}
+
+ERROR RESPONSES:
+- 401 Current password incorrect:
+{
+    "success": false,
+    "message": "Current password is incorrect",
+    "data": null
+}
+
+- 422 Validation error:
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "password": ["The password must be at least 8 characters.", "The password confirmation does not match."]
+    }
+}
+
+
+================================================================================
+                        SECTION 2: CUSTOMER STORE (BROWSE PRODUCTS)
+================================================================================
+
+All endpoints in this section return ONLY products from the customer's vendor.
+Prices are automatically adjusted with customer's discount percentage.
+
+--------------------------------------------------------------------------------
+2.1 GET HOME PAGE DATA
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/home
+Auth:       Bearer Token (Customer)
+Description: Get home page data with vendor info, featured products, categories
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY: None
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Home data retrieved successfully",
+    "data": {
+        "vendor": {
+            "id": 5,
+            "store_name": "Jigo Store",
+            "store_slug": "jigo",
+            "store_logo_url": "https://example.com/logo.png",
+            "store_banner_url": "https://example.com/banner.png",
+            "store_description": "Best products at best prices"
+        },
+        "customer": {
+            "name": "John Doe",
+            "discount_percentage": 10
+        },
+        "featured_products": [
+            {
+                "id": 1,
+                "name": "Product Name",
+                "slug": "product-name",
+                "mrp": 1000,
+                "selling_price": 900,
+                "discounted_price": 810,
+                "main_photo_url": "https://example.com/photo.jpg",
+                "in_stock": true
+            }
+        ],
+        "categories": [
+            {
+                "id": 1,
+                "name": "Category Name",
+                "slug": "category-name",
+                "image_url": "https://example.com/cat.jpg"
+            }
+        ],
+        "total_products": 50
+    }
+}
+
+--------------------------------------------------------------------------------
+2.2 GET PRODUCTS LIST
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/products
+Auth:       Bearer Token (Customer)
+Description: Get paginated list of vendor's products with filters
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+QUERY PARAMETERS:
+    page            - Page number (default: 1)
+    per_page        - Items per page (default: 20, max: 50)
+    search          - Search by name/description
+    category_id     - Filter by category ID
+    subcategory_id  - Filter by subcategory ID
+    in_stock        - Filter by stock (true/false)
+    sort_by         - Sort field: name, selling_price, created_at
+    sort_order      - Sort order: asc, desc
+
+EXAMPLE REQUEST:
+    GET /api/v1/customer/products?page=1&per_page=10&search=shirt&in_stock=true&sort_by=selling_price&sort_order=asc
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Products retrieved successfully",
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 1,
+                "name": "Blue Cotton Shirt",
+                "slug": "blue-cotton-shirt",
+                "description": "High quality cotton shirt",
+                "product_type": "simple",
+                "mrp": 1000,
+                "selling_price": 900,
+                "discounted_price": 810,
+                "customer_discount": 10,
+                "price_range": {
+                    "min": 810,
+                    "max": 810
+                },
+                "in_stock": true,
+                "stock_quantity": 50,
+                "main_photo_url": "https://example.com/photo.jpg",
+                "has_variations": false,
+                "variations_count": 0
+            }
+        ],
+        "first_page_url": "http://127.0.0.1:8000/api/v1/customer/products?page=1",
+        "from": 1,
+        "last_page": 5,
+        "last_page_url": "http://127.0.0.1:8000/api/v1/customer/products?page=5",
+        "links": [...],
+        "next_page_url": "http://127.0.0.1:8000/api/v1/customer/products?page=2",
+        "path": "http://127.0.0.1:8000/api/v1/customer/products",
+        "per_page": 10,
+        "prev_page_url": null,
+        "to": 10,
+        "total": 50
+    }
+}
+
+--------------------------------------------------------------------------------
+2.3 GET PRODUCT DETAILS
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/products/{id}
+Auth:       Bearer Token (Customer)
+Description: Get detailed info for a specific product (by ID or slug)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+PATH PARAMETERS:
+    id - Product ID or slug
+
+EXAMPLE REQUESTS:
+    GET /api/v1/customer/products/1
+    GET /api/v1/customer/products/blue-cotton-shirt
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Product retrieved successfully",
+    "data": {
+        "id": 1,
+        "name": "Blue Cotton Shirt",
+        "slug": "blue-cotton-shirt",
+        "description": "High quality cotton shirt with premium fabric",
+        "product_type": "variable",
+        "mrp": 1000,
+        "selling_price": 900,
+        "discounted_price": 810,
+        "customer_discount": 10,
+        "price_range": {
+            "min": 720,
+            "max": 900
+        },
+        "in_stock": true,
+        "stock_quantity": 100,
+        "main_photo_url": "https://example.com/main.jpg",
+        "gallery_photos": [
+            "https://example.com/photo1.jpg",
+            "https://example.com/photo2.jpg"
+        ],
+        "categories": [
+            {
+                "id": 1,
+                "name": "Clothing"
+            }
+        ],
+        "meta_title": "Blue Cotton Shirt - Best Quality",
+        "meta_description": "Buy premium blue cotton shirt",
+        "variations": [
+            {
+                "id": 1,
+                "sku": "BCS-S-BLUE",
+                "attributes": {"size": "S", "color": "Blue"},
+                "mrp": 1000,
+                "selling_price": 800,
+                "discounted_price": 720,
+                "in_stock": true,
+                "stock_quantity": 25,
+                "is_default": true,
+                "image_url": "https://example.com/var1.jpg"
+            },
+            {
+                "id": 2,
+                "sku": "BCS-M-BLUE",
+                "attributes": {"size": "M", "color": "Blue"},
+                "mrp": 1000,
+                "selling_price": 900,
+                "discounted_price": 810,
+                "in_stock": true,
+                "stock_quantity": 30,
+                "is_default": false,
+                "image_url": "https://example.com/var2.jpg"
+            }
+        ]
+    }
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Product not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+2.4 GET CATEGORIES
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/categories
+Auth:       Bearer Token (Customer)
+Description: Get all categories from customer's vendor
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+REQUEST BODY: None
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Categories retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Clothing",
+            "slug": "clothing",
+            "description": "All types of clothing",
+            "image_url": "https://example.com/clothing.jpg",
+            "subcategories_count": 5
+        },
+        {
+            "id": 2,
+            "name": "Electronics",
+            "slug": "electronics",
+            "description": "Electronic items",
+            "image_url": "https://example.com/electronics.jpg",
+            "subcategories_count": 3
+        }
+    ]
+}
+
+--------------------------------------------------------------------------------
+2.5 GET SUBCATEGORIES
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/categories/{id}/subcategories
+Auth:       Bearer Token (Customer)
+Description: Get subcategories for a specific category
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+PATH PARAMETERS:
+    id - Category ID
+
+EXAMPLE REQUEST:
+    GET /api/v1/customer/categories/1/subcategories
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Subcategories retrieved successfully",
+    "data": {
+        "category": {
+            "id": 1,
+            "name": "Clothing"
+        },
+        "subcategories": [
+            {
+                "id": 1,
+                "name": "Shirts",
+                "slug": "shirts",
+                "description": "All types of shirts",
+                "image_url": "https://example.com/shirts.jpg"
+            },
+            {
+                "id": 2,
+                "name": "Pants",
+                "slug": "pants",
+                "description": "All types of pants",
+                "image_url": "https://example.com/pants.jpg"
+            }
+        ]
+    }
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Category not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+2.6 SEARCH PRODUCTS
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/search
+Auth:       Bearer Token (Customer)
+Description: Search products by name or description
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {token}
+
+QUERY PARAMETERS:
+    q       - Search query (required)
+    limit   - Max results (default: 20, max: 50)
+
+EXAMPLE REQUEST:
+    GET /api/v1/customer/search?q=cotton&limit=10
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Search results retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Blue Cotton Shirt",
+            "slug": "blue-cotton-shirt",
+            "mrp": 1000,
+            "selling_price": 900,
+            "discounted_price": 810,
+            "main_photo_url": "https://example.com/photo.jpg",
+            "in_stock": true
+        }
+    ]
+}
+
+EMPTY SEARCH RESPONSE (200):
+{
+    "success": true,
+    "message": "No search query provided",
+    "data": []
+}
+
+
+================================================================================
+                    SECTION 3: VENDOR CUSTOMER MANAGEMENT
+================================================================================
+
+These APIs are for VENDORS to manage their customers.
+Requires vendor authentication (not customer authentication).
+
+--------------------------------------------------------------------------------
+3.1 GET ALL CUSTOMERS
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/vendor/customers
+Auth:       Bearer Token (Vendor)
+Description: Get paginated list of vendor's customers with statistics
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+QUERY PARAMETERS:
+    page        - Page number (default: 1)
+    per_page    - Items per page (default: 20, max: 50)
+    search      - Search by name, email, or mobile
+    is_active   - Filter by status (true/false)
+
+EXAMPLE REQUEST:
+    GET /api/v1/vendor/customers?page=1&per_page=10&search=john&is_active=true
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Customers retrieved successfully",
+    "data": {
+        "customers": {
+            "current_page": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "name": "John Doe",
+                    "email": "john@example.com",
+                    "mobile_number": "9876543210",
+                    "address": "123 Main Street",
+                    "city": "Mumbai",
+                    "state": "Maharashtra",
+                    "postal_code": "400001",
+                    "discount_percentage": 10,
+                    "is_active": true,
+                    "last_login_at": "2025-01-22T10:30:00.000000Z",
+                    "created_at": "2025-01-20T10:00:00.000000Z"
+                }
+            ],
+            "first_page_url": "...",
+            "from": 1,
+            "last_page": 1,
+            "per_page": 10,
+            "to": 1,
+            "total": 1
+        },
+        "statistics": {
+            "total_customers": 25,
+            "active_customers": 20,
+            "inactive_customers": 5,
+            "new_this_month": 3
+        }
+    }
+}
+
+ERROR RESPONSE (403):
+{
+    "success": false,
+    "message": "Unauthorized. Vendor access required.",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+3.2 CREATE CUSTOMER
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/vendor/customers
+Auth:       Bearer Token (Vendor)
+Description: Create a new customer with login credentials
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+REQUEST BODY:
+{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "Password123",
+    "mobile_number": "9876543210",
+    "address": "123 Main Street",
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "postal_code": "400001",
+    "discount_percentage": 10
+}
+
+REQUIRED FIELDS: name, email, password
+OPTIONAL FIELDS: mobile_number, address, city, state, postal_code, discount_percentage
+
+SUCCESS RESPONSE (201):
+{
+    "success": true,
+    "message": "Customer created successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john@example.com",
+            "mobile_number": "9876543210",
+            "address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "postal_code": "400001",
+            "discount_percentage": 10,
+            "is_active": true,
+            "created_at": "2025-01-22T10:00:00.000000Z"
+        },
+        "login_credentials": {
+            "email": "john@example.com",
+            "password": "Password123",
+            "vendor_slug": "jigo",
+            "login_url": "/api/v1/customer/login"
+        }
+    }
+}
+
+ERROR RESPONSES:
+- 422 Email already exists:
+{
+    "success": false,
+    "message": "A customer with this email already exists",
+    "data": null
+}
+
+- 422 Validation error:
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "email": ["The email field is required."],
+        "password": ["The password must be at least 6 characters."]
+    }
+}
+
+--------------------------------------------------------------------------------
+3.3 GET CUSTOMER DETAILS
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/vendor/customers/{id}
+Auth:       Bearer Token (Vendor)
+Description: Get detailed customer info with order statistics
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+PATH PARAMETERS:
+    id - Customer ID
+
+EXAMPLE REQUEST:
+    GET /api/v1/vendor/customers/1
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Customer retrieved successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "email": "john@example.com",
+            "mobile_number": "9876543210",
+            "address": "123 Main Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "postal_code": "400001",
+            "discount_percentage": 10,
+            "is_active": true,
+            "last_login_at": "2025-01-22T10:30:00.000000Z",
+            "created_at": "2025-01-20T10:00:00.000000Z"
+        },
+        "statistics": {
+            "total_orders": 15,
+            "total_spent": 25000
+        },
+        "recent_orders": [
+            {
+                "id": 1,
+                "invoice_number": "INV-2025-001",
+                "total_amount": 5000,
+                "status": "completed",
+                "created_at": "2025-01-21T10:00:00.000000Z"
+            }
+        ]
+    }
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Customer not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+3.4 UPDATE CUSTOMER
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/vendor/customers/{id}
+Auth:       Bearer Token (Vendor)
+Description: Update customer information (cannot change email)
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+PATH PARAMETERS:
+    id - Customer ID
+
+REQUEST BODY:
+{
+    "name": "John Doe Updated",
+    "mobile_number": "9876543211",
+    "address": "456 New Street",
+    "city": "Delhi",
+    "state": "Delhi",
+    "postal_code": "110001",
+    "discount_percentage": 15,
+    "is_active": true
+}
+
+Note: All fields are optional. Only send fields you want to update.
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Customer updated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe Updated",
+            "email": "john@example.com",
+            "mobile_number": "9876543211",
+            "address": "456 New Street",
+            "city": "Delhi",
+            "state": "Delhi",
+            "postal_code": "110001",
+            "discount_percentage": 15,
+            "is_active": true
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+3.5 DELETE CUSTOMER
+--------------------------------------------------------------------------------
+Endpoint:   DELETE /api/v1/vendor/customers/{id}
+Auth:       Bearer Token (Vendor)
+Description: Delete a customer (revokes all tokens)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+PATH PARAMETERS:
+    id - Customer ID
+
+EXAMPLE REQUEST:
+    DELETE /api/v1/vendor/customers/1
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Customer deleted successfully",
+    "data": null
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Customer not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+3.6 RESET CUSTOMER PASSWORD
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/vendor/customers/{id}/reset-password
+Auth:       Bearer Token (Vendor)
+Description: Reset customer's password (revokes all existing tokens)
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+PATH PARAMETERS:
+    id - Customer ID
+
+REQUEST BODY:
+{
+    "password": "NewPassword123"
+}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Password reset successfully",
+    "data": {
+        "login_credentials": {
+            "email": "john@example.com",
+            "password": "NewPassword123",
+            "vendor_slug": "jigo"
+        }
+    }
+}
+
+ERROR RESPONSE (422):
+{
+    "success": false,
+    "message": "Validation Error",
+    "data": {
+        "password": ["The password must be at least 6 characters."]
+    }
+}
+
+--------------------------------------------------------------------------------
+3.7 TOGGLE CUSTOMER STATUS
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/vendor/customers/{id}/toggle-status
+Auth:       Bearer Token (Vendor)
+Description: Activate or deactivate a customer (deactivation revokes tokens)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {vendor_token}
+
+PATH PARAMETERS:
+    id - Customer ID
+
+REQUEST BODY: None
+
+SUCCESS RESPONSE (200) - When activated:
+{
+    "success": true,
+    "message": "Customer activated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "is_active": true
+        }
+    }
+}
+
+SUCCESS RESPONSE (200) - When deactivated:
+{
+    "success": true,
+    "message": "Customer deactivated successfully",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "John Doe",
+            "is_active": false
+        }
+    }
+}
+
+
+================================================================================
+                            SECTION 4: CUSTOMER CART APIs
+================================================================================
+
+All cart APIs require customer authentication (Bearer token from login).
+Cart items are isolated per customer and only allow products from the customer's vendor.
+Customer discount is automatically applied to all prices.
+
+--------------------------------------------------------------------------------
+4.1 GET CART
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/cart
+Auth:       Bearer Token (Customer)
+Description: Get all items in customer's cart with totals
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Cart items retrieved successfully",
+    "data": {
+        "items": [
+            {
+                "id": 15,
+                "product_id": 7,
+                "product_variation_id": null,
+                "product_name": "Product Name",
+                "product_slug": "product-name",
+                "variation_name": null,
+                "variation_attributes": null,
+                "quantity": 2,
+                "price": "900.00",
+                "total": 1800,
+                "main_photo_url": "https://example.com/photo.jpg",
+                "in_stock": true,
+                "stock_quantity": 90
+            }
+        ],
+        "total": "1800.00",
+        "count": 1,
+        "customer_discount": "10.00"
+    }
+}
+
+--------------------------------------------------------------------------------
+4.2 GET CART COUNT
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/cart/count
+Auth:       Bearer Token (Customer)
+Description: Get number of items in cart
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Cart count retrieved successfully",
+    "data": {
+        "cart_count": 3
+    }
+}
+
+--------------------------------------------------------------------------------
+4.3 ADD TO CART
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/customer/cart/add
+Auth:       Bearer Token (Customer)
+Description: Add a product to cart (validates product belongs to customer's vendor)
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+REQUEST BODY:
+{
+    "product_id": 7,
+    "product_variation_id": null,    // Optional - for variable products
+    "quantity": 2                     // Optional - defaults to 1
+}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Product added to cart successfully",
+    "data": {
+        "cart_item": {
+            "id": 15,
+            "product_id": 7,
+            "product_name": "Product Name",
+            "quantity": 2,
+            "price": "900.00",
+            "total": 1800
+        },
+        "cart_count": 1
+    }
+}
+
+ERROR RESPONSES:
+
+- 404 Product not from customer's vendor:
+{
+    "success": false,
+    "message": "Product not available",
+    "data": null
+}
+
+- 400 Insufficient stock:
+{
+    "success": false,
+    "message": "Insufficient stock. Only 5 available.",
+    "data": null
+}
+
+- 400 Invalid variation:
+{
+    "success": false,
+    "message": "Invalid variation for this product",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+4.4 UPDATE CART ITEM QUANTITY
+--------------------------------------------------------------------------------
+Endpoint:   PUT /api/v1/customer/cart/{id}
+Auth:       Bearer Token (Customer)
+Description: Update quantity of a cart item
+
+REQUEST HEADERS:
+    Content-Type: application/json
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Cart item ID
+
+REQUEST BODY:
+{
+    "quantity": 5
+}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Cart item updated successfully",
+    "data": {
+        "cart_item": {
+            "id": 15,
+            "quantity": 5,
+            "price": "900.00",
+            "total": 4500
+        },
+        "cart_total": "4500.00"
+    }
+}
+
+ERROR RESPONSES:
+
+- 404 Cart item not found:
+{
+    "success": false,
+    "message": "Cart item not found",
+    "data": null
+}
+
+- 400 Insufficient stock:
+{
+    "success": false,
+    "message": "Insufficient stock. Only 3 more available.",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+4.5 REMOVE CART ITEM
+--------------------------------------------------------------------------------
+Endpoint:   DELETE /api/v1/customer/cart/{id}
+Auth:       Bearer Token (Customer)
+Description: Remove a single item from cart (restores stock)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Cart item ID
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Item removed from cart successfully",
+    "data": {
+        "cart_count": 2,
+        "cart_total": "3600.00"
+    }
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Cart item not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+4.6 CLEAR CART
+--------------------------------------------------------------------------------
+Endpoint:   DELETE /api/v1/customer/cart/clear
+Auth:       Bearer Token (Customer)
+Description: Remove all items from cart (restores all stock)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Cart cleared successfully",
+    "data": {
+        "items_removed": 3
+    }
+}
+
+--------------------------------------------------------------------------------
+4.7 GENERATE INVOICE FROM CART (CHECKOUT)
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/customer/cart/generate-invoice
+Auth:       Bearer Token (Customer)
+Description: Create a proforma invoice from cart items and clear the cart
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+SUCCESS RESPONSE (201):
+{
+    "success": true,
+    "message": "Proforma invoice generated successfully",
+    "data": {
+        "invoice": {
+            "id": 15,
+            "invoice_number": "INV-2025-0008",
+            "total_amount": "2700.00",
+            "status": "Draft",
+            "created_at": "2025-01-22T07:08:29.000000Z"
+        },
+        "invoice_data": {
+            "cart_items": [
+                {
+                    "id": 15,
+                    "product_id": 7,
+                    "product_name": "Product Name",
+                    "product_slug": "product-slug",
+                    "product_description": "Description",
+                    "quantity": 3,
+                    "price": "900.00",
+                    "total": 2700,
+                    "main_photo_url": "https://example.com/photo.jpg",
+                    "product_variation_id": null,
+                    "variation_display_name": null,
+                    "variation_attributes": null,
+                    "variation_sku": null
+                }
+            ],
+            "total": 2700,
+            "invoice_date": "2025-01-22",
+            "customer": {
+                "id": 7,
+                "name": "Customer Name",
+                "email": "customer@example.com",
+                "mobile_number": "9876543210",
+                "address": "123 Main Street",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "postal_code": "400001",
+                "discount_percentage": "10.00"
+            },
+            "store": {
+                "id": 5,
+                "store_name": "Store Name",
+                "store_slug": "store-slug",
+                "store_logo_url": "https://example.com/logo.jpg",
+                "business_name": "Business Name",
+                "business_email": "store@example.com",
+                "business_phone": "9876543210",
+                "business_address": "456 Store Street",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "postal_code": "400001",
+                "gst_number": "GST123456789"
+            }
+        }
+    }
+}
+
+ERROR RESPONSE (400):
+{
+    "success": false,
+    "message": "Cart is empty",
+    "data": null
+}
+
+
+================================================================================
+                        SECTION 5: CUSTOMER INVOICE APIs
+================================================================================
+
+All invoice APIs require customer authentication (Bearer token from login).
+Customers can only access invoices created from their cart.
+Invoice details include full vendor/store information.
+
+--------------------------------------------------------------------------------
+5.1 LIST INVOICES
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/invoices
+Auth:       Bearer Token (Customer)
+Description: Get paginated list of customer's invoices
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+QUERY PARAMETERS:
+    status    - Filter by status (Draft, Confirmed, Cancelled, etc.)
+    page      - Page number (default: 1)
+    per_page  - Items per page (default: 15, max: 50)
+
+EXAMPLE REQUEST:
+    GET /api/v1/customer/invoices?status=Draft&page=1&per_page=10
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Invoices retrieved successfully",
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 15,
+                "invoice_number": "INV-2025-0008",
+                "total_amount": "2700.00",
+                "paid_amount": "0.00",
+                "pending_amount": 2700,
+                "payment_status": "unpaid",
+                "status": "Draft",
+                "items_count": 1,
+                "created_at": "2025-01-22T07:08:29.000000Z",
+                "updated_at": "2025-01-22T07:08:29.000000Z"
+            }
+        ],
+        "first_page_url": "http://127.0.0.1:8000/api/v1/customer/invoices?page=1",
+        "from": 1,
+        "last_page": 1,
+        "last_page_url": "http://127.0.0.1:8000/api/v1/customer/invoices?page=1",
+        "next_page_url": null,
+        "path": "http://127.0.0.1:8000/api/v1/customer/invoices",
+        "per_page": 15,
+        "prev_page_url": null,
+        "to": 1,
+        "total": 1
+    }
+}
+
+--------------------------------------------------------------------------------
+5.2 GET INVOICE DETAILS
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/invoices/{id}
+Auth:       Bearer Token (Customer)
+Description: Get detailed invoice with items and store information
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Invoice ID
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Invoice retrieved successfully",
+    "data": {
+        "invoice": {
+            "id": 15,
+            "invoice_number": "INV-2025-0008",
+            "total_amount": "2700.00",
+            "paid_amount": "0.00",
+            "pending_amount": 2700,
+            "payment_status": "unpaid",
+            "status": "Draft",
+            "created_at": "2025-01-22T07:08:29.000000Z",
+            "updated_at": "2025-01-22T07:08:29.000000Z"
+        },
+        "invoice_data": {
+            "cart_items": [
+                {
+                    "id": 15,
+                    "product_id": 7,
+                    "product_name": "Product Name",
+                    "product_slug": "product-slug",
+                    "product_description": "Description",
+                    "quantity": 3,
+                    "price": "900.00",
+                    "total": 2700,
+                    "main_photo_url": "https://example.com/photo.jpg"
+                }
+            ],
+            "total": 2700,
+            "invoice_date": "2025-01-22",
+            "customer": {
+                "id": 7,
+                "name": "Customer Name",
+                "email": "customer@example.com",
+                "mobile_number": "9876543210",
+                "address": "123 Main Street",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "postal_code": "400001",
+                "discount_percentage": "10.00"
+            },
+            "store": {
+                "id": 5,
+                "store_name": "Store Name",
+                "store_slug": "store-slug",
+                "store_logo_url": "https://example.com/logo.jpg",
+                "business_name": "Business Name",
+                "business_email": "store@example.com",
+                "business_phone": "9876543210",
+                "business_address": "456 Store Street",
+                "city": "Mumbai",
+                "state": "Maharashtra",
+                "postal_code": "400001",
+                "gst_number": "GST123456789"
+            }
+        }
+    }
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Invoice not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+5.3 DOWNLOAD INVOICE PDF
+--------------------------------------------------------------------------------
+Endpoint:   GET /api/v1/customer/invoices/{id}/download-pdf
+Auth:       Bearer Token (Customer)
+Description: Download invoice as PDF file
+
+REQUEST HEADERS:
+    Accept: application/pdf
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Invoice ID
+
+SUCCESS RESPONSE:
+    Returns PDF file download: proforma-invoice-INV-2025-0008.pdf
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Invoice not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+5.4 ADD INVOICE ITEMS TO CART
+--------------------------------------------------------------------------------
+Endpoint:   POST /api/v1/customer/invoices/{id}/add-to-cart
+Auth:       Bearer Token (Customer)
+Description: Add all items from a draft invoice back to cart (deletes the invoice)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Invoice ID
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Products from invoice added to cart successfully.",
+    "data": {
+        "added_items": ["Product 1", "Product 2"],
+        "skipped_items": [],
+        "cart_count": 2
+    }
+}
+
+SUCCESS RESPONSE (200) - With skipped items:
+{
+    "success": true,
+    "message": "Products from invoice added to cart successfully. Some items were skipped: Product 3",
+    "data": {
+        "added_items": ["Product 1", "Product 2"],
+        "skipped_items": ["Product 3"],
+        "cart_count": 2
+    }
+}
+
+ERROR RESPONSES:
+
+- 404 Invoice not found:
+{
+    "success": false,
+    "message": "Invoice not found",
+    "data": null
+}
+
+- 400 Invoice not in draft status:
+{
+    "success": false,
+    "message": "Only draft invoices can be added to cart",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+5.5 DELETE INVOICE
+--------------------------------------------------------------------------------
+Endpoint:   DELETE /api/v1/customer/invoices/{id}
+Auth:       Bearer Token (Customer)
+Description: Delete an invoice and restore stock for all items
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id - Invoice ID
+
+SUCCESS RESPONSE (200):
+{
+    "success": true,
+    "message": "Invoice deleted and stock restored successfully",
+    "data": null
+}
+
+ERROR RESPONSE (404):
+{
+    "success": false,
+    "message": "Invoice not found",
+    "data": null
+}
+
+--------------------------------------------------------------------------------
+5.6 REMOVE ITEM FROM INVOICE
+--------------------------------------------------------------------------------
+Endpoint:   DELETE /api/v1/customer/invoices/{id}/items/{productId}
+Auth:       Bearer Token (Customer)
+Description: Remove a specific product from an invoice (restores stock)
+
+REQUEST HEADERS:
+    Accept: application/json
+    Authorization: Bearer {customer_token}
+
+PATH PARAMETERS:
+    id        - Invoice ID
+    productId - Product ID to remove
+
+SUCCESS RESPONSE (200) - Item removed:
+{
+    "success": true,
+    "message": "Item removed from invoice successfully",
+    "data": {
+        "invoice": {
+            "id": 15,
+            "invoice_number": "INV-2025-0008",
+            "total_amount": 1800
+        },
+        "removed_item": {
+            "product_id": 7,
+            "product_name": "Product Name",
+            "quantity": 3,
+            "price": "900.00",
+            "total": 2700
+        },
+        "invoice_deleted": false
+    }
+}
+
+SUCCESS RESPONSE (200) - Last item removed (invoice deleted):
+{
+    "success": true,
+    "message": "Last item removed. Invoice has been deleted.",
+    "data": {
+        "invoice_deleted": true,
+        "removed_item": {
+            "product_id": 7,
+            "product_name": "Product Name",
+            "quantity": 3,
+            "price": "900.00",
+            "total": 2700
+        }
+    }
+}
+
+ERROR RESPONSES:
+
+- 404 Invoice not found:
+{
+    "success": false,
+    "message": "Invoice not found",
+    "data": null
+}
+
+- 404 Item not found:
+{
+    "success": false,
+    "message": "Item not found in invoice",
+    "data": null
+}
+
+- 400 Invoice has no items:
+{
+    "success": false,
+    "message": "Invoice has no items",
+    "data": null
+}
+
+
+================================================================================
+                            IMPORTANT NOTES
+================================================================================
+
+1. AUTHENTICATION
+   - Customer APIs use Bearer token authentication
+   - Token is obtained from the login endpoint
+   - Token must be included in Authorization header: "Bearer {token}"
+   - Tokens have 'customer' ability for Sanctum
+
+2. VENDOR ISOLATION
+   - Customers can ONLY see products from their assigned vendor
+   - Same email can exist for different vendors
+   - All product queries are automatically filtered by vendor_id
+
+3. DISCOUNT PRICING
+   - Each customer has a discount_percentage (0-100)
+   - All product prices are automatically adjusted with customer's discount
+   - discounted_price = selling_price * (1 - discount_percentage/100)
+
+4. PRODUCT STATUS
+   - Only products with status 'active' or 'published' are shown
+   - Products must belong to the customer's vendor
+
+5. ERROR HANDLING
+   - All errors return JSON with success=false
+   - HTTP status codes: 200 (success), 201 (created), 401 (unauthorized), 
+     403 (forbidden), 404 (not found), 422 (validation error)
+
+6. PAGINATION
+   - List endpoints support pagination
+   - Default: 20 items per page
+   - Maximum: 50 items per page
+   - Use page and per_page query parameters
+
+
+================================================================================
+                            QUICK REFERENCE
+================================================================================
+
+CUSTOMER AUTH (Public):
+  POST   /api/v1/customer/login
+
+CUSTOMER AUTH (Protected - requires customer token):
+  POST   /api/v1/customer/logout
+  GET    /api/v1/customer/profile
+  PUT    /api/v1/customer/profile
+  PUT    /api/v1/customer/change-password
+
+CUSTOMER STORE (Protected - requires customer token):
+  GET    /api/v1/customer/home
+  GET    /api/v1/customer/products
+  GET    /api/v1/customer/products/{id}
+  GET    /api/v1/customer/categories
+  GET    /api/v1/customer/categories/{id}/subcategories
+  GET    /api/v1/customer/search
+
+CUSTOMER CART (Protected - requires customer token):
+  GET    /api/v1/customer/cart
+  GET    /api/v1/customer/cart/count
+  POST   /api/v1/customer/cart/add
+  PUT    /api/v1/customer/cart/{id}
+  DELETE /api/v1/customer/cart/{id}
+  DELETE /api/v1/customer/cart/clear
+  POST   /api/v1/customer/cart/generate-invoice
+
+CUSTOMER INVOICES (Protected - requires customer token):
+  GET    /api/v1/customer/invoices
+  GET    /api/v1/customer/invoices/{id}
+  GET    /api/v1/customer/invoices/{id}/download-pdf
+  POST   /api/v1/customer/invoices/{id}/add-to-cart
+  DELETE /api/v1/customer/invoices/{id}
+  DELETE /api/v1/customer/invoices/{id}/items/{productId}
+
+VENDOR CUSTOMER MANAGEMENT (Protected - requires vendor token):
+  GET    /api/v1/vendor/customers
+  POST   /api/v1/vendor/customers
+  GET    /api/v1/vendor/customers/{id}
+  PUT    /api/v1/vendor/customers/{id}
+  DELETE /api/v1/vendor/customers/{id}
+  PUT    /api/v1/vendor/customers/{id}/reset-password
+  PUT    /api/v1/vendor/customers/{id}/toggle-status
+
+
+================================================================================
+                        END OF DOCUMENTATION
+================================================================================

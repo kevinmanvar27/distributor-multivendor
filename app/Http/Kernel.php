@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'frontend.access' => \App\Http\Middleware\CheckFrontendAccess::class,
         'vendor' => \App\Http\Middleware\VendorMiddleware::class,
         'vendor.permission' => \App\Http\Middleware\CheckVendorPermission::class,
+        'vendor.customer' => \App\Http\Middleware\EnsureVendorCustomer::class,
     ];
 }
