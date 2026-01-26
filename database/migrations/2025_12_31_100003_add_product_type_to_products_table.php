@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->enum('product_type', ['simple', 'variable'])->default('simple')->after('name');
-            $table->json('product_attributes')->nullable()->after('product_categories'); // Store which attributes this product uses
+            if (!Schema::hasColumn('products', 'product_type')) {
+                $table->enum('product_type', ['simple', 'variable'])->default('simple')->after('name');
+            }
+            if (!Schema::hasColumn('products', 'product_attributes')) {
+                $table->json('product_attributes')->nullable()->after('product_categories'); // Store which attributes this product uses
+            }
         });
     }
 
@@ -23,7 +27,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn(['product_type', 'product_attributes']);
+            $columns = [];
+            if (Schema::hasColumn('products', 'product_type')) {
+                $columns[] = 'product_type';
+            }
+            if (Schema::hasColumn('products', 'product_attributes')) {
+                $columns[] = 'product_attributes';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

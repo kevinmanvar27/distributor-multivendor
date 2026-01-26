@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Add vendor_id to track which vendor's store the user registered from
             // NULL means main store customer, vendor_id means vendor store customer
-            $table->unsignedBigInteger('vendor_id')->nullable()->after('user_role');
-            $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('set null');
-            $table->index('vendor_id');
+            if (!Schema::hasColumn('users', 'vendor_id')) {
+                $table->unsignedBigInteger('vendor_id')->nullable()->after('user_role');
+                $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('set null');
+                $table->index('vendor_id');
+            }
         });
     }
 
@@ -26,9 +28,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['vendor_id']);
-            $table->dropIndex(['vendor_id']);
-            $table->dropColumn('vendor_id');
+            if (Schema::hasColumn('users', 'vendor_id')) {
+                $table->dropForeign(['vendor_id']);
+                $table->dropIndex(['vendor_id']);
+                $table->dropColumn('vendor_id');
+            }
         });
     }
 };

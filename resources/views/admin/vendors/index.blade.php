@@ -122,50 +122,71 @@
                                                     <td>{{ $vendor->commission_rate ?? 0 }}%</td>
                                                     <td>{{ $vendor->created_at->format('M d, Y') }}</td>
                                                     <td>
-                                                        <div class="btn-group" role="group">
-                                                            <a href="{{ route('admin.vendors.show', $vendor) }}" class="btn btn-sm btn-outline-info" title="View">
+                                                        <div class="btn-group btn-group-sm" role="group">
+                                                            <!-- View Button -->
+                                                            <a href="{{ route('admin.vendors.show', $vendor) }}" class="btn btn-outline-info rounded-start-pill px-3" title="View">
                                                                 <i class="fas fa-eye"></i>
                                                             </a>
-                                                            <a href="{{ route('admin.vendors.edit', $vendor) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                            
+                                                            <!-- Edit Button -->
+                                                            <a href="{{ route('admin.vendors.edit', $vendor) }}" class="btn btn-outline-primary px-3" title="Edit">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
                                                             
-                                                            @if($vendor->status === 'pending')
-                                                                <form action="{{ route('admin.vendors.approve', $vendor) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Approve">
-                                                                        <i class="fas fa-check"></i>
-                                                                    </button>
-                                                                </form>
-                                                                <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Reject">
-                                                                        <i class="fas fa-times"></i>
-                                                                    </button>
-                                                                </form>
-                                                            @elseif($vendor->status === 'approved')
-                                                                <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Suspend">
-                                                                        <i class="fas fa-ban"></i>
-                                                                    </button>
-                                                                </form>
-                                                            @elseif($vendor->status === 'suspended')
-                                                                <form action="{{ route('admin.vendors.reactivate', $vendor) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
-                                                                        <i class="fas fa-redo"></i>
-                                                                    </button>
-                                                                </form>
-                                                            @endif
-                                                            
-                                                            <form action="{{ route('admin.vendors.destroy', $vendor) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this vendor?');">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                                    <i class="fas fa-trash"></i>
+                                                            <!-- Status Actions Dropdown -->
+                                                            <div class="btn-group btn-group-sm" role="group">
+                                                                <button type="button" class="btn btn-outline-secondary dropdown-toggle px-3" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions">
+                                                                    <i class="fas fa-ellipsis-v"></i>
                                                                 </button>
-                                                            </form>
+                                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                                    @if($vendor->status === 'pending')
+                                                                        <li>
+                                                                            <form action="{{ route('admin.vendors.approve', $vendor) }}" method="POST">
+                                                                                @csrf
+                                                                                <button type="submit" class="dropdown-item text-success">
+                                                                                    <i class="fas fa-check me-2"></i> Approve
+                                                                                </button>
+                                                                            </form>
+                                                                        </li>
+                                                                        <li>
+                                                                            <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST">
+                                                                                @csrf
+                                                                                <button type="submit" class="dropdown-item text-danger">
+                                                                                    <i class="fas fa-times me-2"></i> Reject
+                                                                                </button>
+                                                                            </form>
+                                                                        </li>
+                                                                    @elseif($vendor->status === 'approved')
+                                                                        <li>
+                                                                            <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST">
+                                                                                @csrf
+                                                                                <button type="submit" class="dropdown-item text-warning">
+                                                                                    <i class="fas fa-ban me-2"></i> Suspend
+                                                                                </button>
+                                                                            </form>
+                                                                        </li>
+                                                                    @elseif($vendor->status === 'suspended' || $vendor->status === 'rejected')
+                                                                        <li>
+                                                                            <form action="{{ route('admin.vendors.reactivate', $vendor) }}" method="POST">
+                                                                                @csrf
+                                                                                <button type="submit" class="dropdown-item text-success">
+                                                                                    <i class="fas fa-redo me-2"></i> Reactivate
+                                                                                </button>
+                                                                            </form>
+                                                                        </li>
+                                                                    @endif
+                                                                    <li><hr class="dropdown-divider"></li>
+                                                                    <li>
+                                                                        <form action="{{ route('admin.vendors.destroy', $vendor) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this vendor? This action cannot be undone.');">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                                <i class="fas fa-trash me-2"></i> Delete
+                                                                            </button>
+                                                                        </form>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                 </tr>

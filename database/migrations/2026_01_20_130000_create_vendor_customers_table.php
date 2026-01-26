@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('vendor_customers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('vendor_id');
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('first_invoice_id')->nullable(); // Track which invoice created this relationship
             $table->timestamps();
 

@@ -107,8 +107,45 @@ class MediaController extends Controller
         
         // Check if file exists in request
         if (!$request->hasFile('file')) {
-            Log::error('No file found in vendor media upload request');
-            return response()->json(['success' => false, 'error' => 'No file uploaded'], 400);
+            // Check if there was a file but it failed to upload
+            $file = $request->file('file');
+            if ($file) {
+                $errorCode = $file->getError();
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE => 'The file exceeds the maximum upload size (' . ini_get('upload_max_filesize') . '). Please upload a smaller file or contact administrator.',
+                    UPLOAD_ERR_FORM_SIZE => 'The file exceeds the maximum form size.',
+                    UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Server error: Missing temporary folder.',
+                    UPLOAD_ERR_CANT_WRITE => 'Server error: Failed to write file to disk.',
+                    UPLOAD_ERR_EXTENSION => 'Server error: A PHP extension stopped the file upload.',
+                ];
+                $errorMessage = $errorMessages[$errorCode] ?? 'Unknown upload error (code: ' . $errorCode . ')';
+                Log::error('Vendor file upload error: ' . $errorMessage, ['error_code' => $errorCode, 'vendor_id' => $vendor->id]);
+                return response()->json(['success' => false, 'error' => $errorMessage], 400);
+            }
+            
+            Log::error('No file found in vendor media upload request', ['vendor_id' => $vendor->id]);
+            return response()->json(['success' => false, 'error' => 'No file uploaded. Please select a file.'], 400);
+        }
+        
+        $file = $request->file('file');
+        
+        // Check if file is valid
+        if (!$file->isValid()) {
+            $errorCode = $file->getError();
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'The file exceeds the maximum upload size (' . ini_get('upload_max_filesize') . '). Please upload a smaller file.',
+                UPLOAD_ERR_FORM_SIZE => 'The file exceeds the maximum form size.',
+                UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Server error: Missing temporary folder.',
+                UPLOAD_ERR_CANT_WRITE => 'Server error: Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION => 'Server error: A PHP extension stopped the file upload.',
+            ];
+            $errorMessage = $errorMessages[$errorCode] ?? $file->getErrorMessage();
+            Log::error('Invalid vendor file upload', ['error_code' => $errorCode, 'error_message' => $errorMessage, 'vendor_id' => $vendor->id]);
+            return response()->json(['success' => false, 'error' => $errorMessage], 400);
         }
         
         $validator = Validator::make($request->all(), [
@@ -121,7 +158,6 @@ class MediaController extends Controller
         }
         
         try {
-            $file = $request->file('file');
             $originalName = $file->getClientOriginalName();
             $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
             

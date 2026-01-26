@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->foreignId('vendor_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            if (!Schema::hasColumn('attendances', 'vendor_id')) {
+                $table->foreignId('vendor_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            }
         });
     }
 
@@ -22,8 +24,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->dropForeign(['vendor_id']);
-            $table->dropColumn('vendor_id');
+            if (Schema::hasColumn('attendances', 'vendor_id')) {
+                $table->dropForeign(['vendor_id']);
+                $table->dropColumn('vendor_id');
+            }
         });
     }
 };

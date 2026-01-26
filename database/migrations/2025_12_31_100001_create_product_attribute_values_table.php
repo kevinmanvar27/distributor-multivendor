@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_attribute_values', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('attribute_id')->constrained('product_attributes')->onDelete('cascade');
-            $table->string('value'); // e.g., "Small", "Red", "Cotton"
-            $table->string('slug');
-            $table->string('color_code')->nullable(); // For color attributes
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-            
-            $table->unique(['attribute_id', 'slug']);
-        });
+        if (!Schema::hasTable('product_attribute_values')) {
+            Schema::create('product_attribute_values', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('attribute_id')->constrained('product_attributes')->onDelete('cascade');
+                $table->string('value'); // e.g., "Small", "Red", "Cotton"
+                $table->string('slug');
+                $table->string('color_code')->nullable(); // For color attributes
+                $table->integer('sort_order')->default(0);
+                $table->timestamps();
+                
+                $table->unique(['attribute_id', 'slug']);
+            });
+        }
     }
 
     /**

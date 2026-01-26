@@ -11,23 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('without_gst_invoices', function (Blueprint $table) {
-            $table->id();
-            $table->string('invoice_number')->unique();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->string('session_id')->nullable();
-            $table->decimal('total_amount', 10, 2);
-            $table->json('invoice_data');
-            $table->string('status')->default('Draft');
-            $table->unsignedBigInteger('original_invoice_id')->nullable();
-            $table->timestamps();
-            
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->index('invoice_number');
-            $table->index('user_id');
-            $table->index('session_id');
-            $table->index('original_invoice_id');
-        });
+        if (!Schema::hasTable('without_gst_invoices')) {
+            Schema::create('without_gst_invoices', function (Blueprint $table) {
+                $table->id();
+                $table->string('invoice_number')->unique();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->string('session_id')->nullable();
+                $table->decimal('total_amount', 10, 2);
+                $table->json('invoice_data');
+                $table->string('status')->default('Draft');
+                $table->unsignedBigInteger('original_invoice_id')->nullable();
+                $table->timestamps();
+                
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->index('invoice_number');
+                $table->index('user_id');
+                $table->index('session_id');
+                $table->index('original_invoice_id');
+            });
+        }
     }
 
     /**

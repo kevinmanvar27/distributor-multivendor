@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Add approval status field for frontend access control
-            $table->boolean('is_approved')->default(true); // Default to true to not affect existing users
+            if (!Schema::hasColumn('users', 'is_approved')) {
+                $table->boolean('is_approved')->default(true); // Default to true to not affect existing users
+            }
         });
     }
 
@@ -24,7 +26,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Remove approval status field
-            $table->dropColumn('is_approved');
+            if (Schema::hasColumn('users', 'is_approved')) {
+                $table->dropColumn('is_approved');
+            }
         });
     }
 };

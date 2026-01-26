@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->tinyInteger('status')->default(0)->after('invoice_data');
+            if (!Schema::hasColumn('proforma_invoices', 'status')) {
+                $table->tinyInteger('status')->default(0)->after('invoice_data');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->dropColumn('status');
+            if (Schema::hasColumn('proforma_invoices', 'status')) {
+                $table->dropColumn('status');
+            }
         });
     }
 };

@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::table('products', function (Blueprint $table) {
             // Add JSON column to store selected categories and subcategories
-            $table->json('product_categories')->nullable()->after('product_gallery');
+            if (!Schema::hasColumn('products', 'product_categories')) {
+                $table->json('product_categories')->nullable()->after('product_gallery');
+            }
         });
     }
 
@@ -23,7 +25,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('product_categories');
+            if (Schema::hasColumn('products', 'product_categories')) {
+                $table->dropColumn('product_categories');
+            }
         });
     }
 };

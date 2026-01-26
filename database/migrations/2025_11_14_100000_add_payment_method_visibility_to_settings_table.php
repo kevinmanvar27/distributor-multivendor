@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::table('settings', function (Blueprint $table) {
             // Add payment method visibility settings
-            $table->boolean('show_online_payment')->default(true);
-            $table->boolean('show_cod_payment')->default(true);
-            $table->boolean('show_invoice_payment')->default(true);
+            if (!Schema::hasColumn('settings', 'show_online_payment')) {
+                $table->boolean('show_online_payment')->default(true);
+            }
+            if (!Schema::hasColumn('settings', 'show_cod_payment')) {
+                $table->boolean('show_cod_payment')->default(true);
+            }
+            if (!Schema::hasColumn('settings', 'show_invoice_payment')) {
+                $table->boolean('show_invoice_payment')->default(true);
+            }
         });
     }
 
@@ -26,7 +32,19 @@ return new class extends Migration
     {
         Schema::table('settings', function (Blueprint $table) {
             // Remove payment method visibility settings
-            $table->dropColumn(['show_online_payment', 'show_cod_payment', 'show_invoice_payment']);
+            $columns = [];
+            if (Schema::hasColumn('settings', 'show_online_payment')) {
+                $columns[] = 'show_online_payment';
+            }
+            if (Schema::hasColumn('settings', 'show_cod_payment')) {
+                $columns[] = 'show_cod_payment';
+            }
+            if (Schema::hasColumn('settings', 'show_invoice_payment')) {
+                $columns[] = 'show_invoice_payment';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lead_reminders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('lead_id')->constrained()->onDelete('cascade');
-            $table->foreignId('vendor_id')->constrained()->onDelete('cascade');
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->dateTime('reminder_at');
-            $table->enum('status', ['pending', 'completed', 'dismissed'])->default('pending');
-            $table->dateTime('completed_at')->nullable();
-            $table->timestamps();
-            
-            // Index for efficient querying
-            $table->index(['vendor_id', 'status', 'reminder_at']);
-        });
+        if (!Schema::hasTable('lead_reminders')) {
+            Schema::create('lead_reminders', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('lead_id')->constrained()->onDelete('cascade');
+                $table->foreignId('vendor_id')->constrained()->onDelete('cascade');
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->dateTime('reminder_at');
+                $table->enum('status', ['pending', 'completed', 'dismissed'])->default('pending');
+                $table->dateTime('completed_at')->nullable();
+                $table->timestamps();
+                
+                // Index for efficient querying
+                $table->index(['vendor_id', 'status', 'reminder_at']);
+            });
+        }
     }
 
     /**

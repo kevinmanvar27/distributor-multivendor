@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('shopping_cart_items', function (Blueprint $table) {
-            $table->foreignId('product_variation_id')->nullable()->after('product_id')
-                  ->constrained('product_variations')->onDelete('cascade');
+            if (!Schema::hasColumn('shopping_cart_items', 'product_variation_id')) {
+                $table->foreignId('product_variation_id')->nullable()->after('product_id')
+                      ->constrained('product_variations')->onDelete('cascade');
+            }
         });
     }
 
@@ -23,8 +25,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('shopping_cart_items', function (Blueprint $table) {
-            $table->dropForeign(['product_variation_id']);
-            $table->dropColumn('product_variation_id');
+            if (Schema::hasColumn('shopping_cart_items', 'product_variation_id')) {
+                $table->dropForeign(['product_variation_id']);
+                $table->dropColumn('product_variation_id');
+            }
         });
     }
 };

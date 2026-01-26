@@ -13,12 +13,16 @@ return new class extends Migration
     {
         // Add vendor_id to leads table
         Schema::table('leads', function (Blueprint $table) {
-            $table->foreignId('vendor_id')->nullable()->after('id')->constrained('vendors')->nullOnDelete();
+            if (!Schema::hasColumn('leads', 'vendor_id')) {
+                $table->foreignId('vendor_id')->nullable()->after('id')->constrained('vendors')->nullOnDelete();
+            }
         });
 
         // Add vendor_id to salaries table
         Schema::table('salaries', function (Blueprint $table) {
-            $table->foreignId('vendor_id')->nullable()->after('id')->constrained('vendors')->nullOnDelete();
+            if (!Schema::hasColumn('salaries', 'vendor_id')) {
+                $table->foreignId('vendor_id')->nullable()->after('id')->constrained('vendors')->nullOnDelete();
+            }
         });
     }
 
@@ -28,13 +32,17 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('leads', function (Blueprint $table) {
-            $table->dropForeign(['vendor_id']);
-            $table->dropColumn('vendor_id');
+            if (Schema::hasColumn('leads', 'vendor_id')) {
+                $table->dropForeign(['vendor_id']);
+                $table->dropColumn('vendor_id');
+            }
         });
 
         Schema::table('salaries', function (Blueprint $table) {
-            $table->dropForeign(['vendor_id']);
-            $table->dropColumn('vendor_id');
+            if (Schema::hasColumn('salaries', 'vendor_id')) {
+                $table->dropForeign(['vendor_id']);
+                $table->dropColumn('vendor_id');
+            }
         });
     }
 };

@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->string('company_email')->nullable()->after('address');
-            $table->string('company_phone')->nullable()->after('company_email');
+            if (!Schema::hasColumn('settings', 'company_email')) {
+                $table->string('company_email')->nullable()->after('address');
+            }
+            if (!Schema::hasColumn('settings', 'company_phone')) {
+                $table->string('company_phone')->nullable()->after('company_email');
+            }
         });
     }
 
@@ -23,7 +27,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn(['company_email', 'company_phone']);
+            $columns = [];
+            if (Schema::hasColumn('settings', 'company_email')) {
+                $columns[] = 'company_email';
+            }
+            if (Schema::hasColumn('settings', 'company_phone')) {
+                $columns[] = 'company_phone';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

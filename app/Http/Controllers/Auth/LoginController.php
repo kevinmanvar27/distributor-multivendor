@@ -10,6 +10,18 @@ use App\Models\User;
 class LoginController extends Controller
 {
     /**
+     * Admin allowed roles that can access the admin panel.
+     * 
+     * @var array
+     */
+    protected $allowedRoles = [
+        'super_admin',
+        'admin',
+        'editor',
+        'staff',
+    ];
+
+    /**
      * Show the login form
      *
      * @return \Illuminate\View\View
@@ -37,21 +49,51 @@ class LoginController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             
-            // Check user role and redirect accordingly
             $user = Auth::user();
             
-            // If user has 'user' role, redirect to frontend home with access denied message
-            if ($user->user_role === 'user') {
+            // Check if the authenticated user is a User model (not VendorCustomer or other)
+            if (!($user instanceof User)) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 
                 return back()->withErrors([
-                    'email' => 'You do not have access to the admin area.',
+                    'email' => 'Access denied. Admin panel is not accessible with this account type.',
                 ]);
             }
             
-            // For all other roles (super_admin, admin, etc.), redirect to admin dashboard
+            // Check if user has an allowed role for admin panel
+            // Blocked roles: 'user', 'vendor', or any other non-admin role
+            if (!in_array($user->user_role, $this->allowedRoles)) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                $message = 'You do not have access to the admin area.';
+                
+                if ($user->user_role === 'vendor') {
+                    $message = 'Vendors should use the vendor portal to login.';
+                } elseif ($user->user_role === 'user') {
+                    $message = 'Regular users do not have access to the admin area.';
+                }
+                
+                return back()->withErrors([
+                    'email' => $message,
+                ]);
+            }
+            
+            // Check if user is approved (for non-super_admin users)
+            if ($user->user_role !== 'super_admin' && !$user->is_approved) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return back()->withErrors([
+                    'email' => 'Your account is pending approval. Please contact an administrator.',
+                ]);
+            }
+            
+            // For all allowed roles, redirect to admin dashboard
             return redirect()->intended('admin/dashboard');
         }
 

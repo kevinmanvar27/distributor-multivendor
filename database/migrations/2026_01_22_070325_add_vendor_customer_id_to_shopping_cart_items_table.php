@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::table('shopping_cart_items', function (Blueprint $table) {
             // Add vendor_customer_id column (nullable to support both regular users and vendor customers)
-            $table->unsignedBigInteger('vendor_customer_id')->nullable()->after('user_id');
-            
-            // Add foreign key constraint
-            $table->foreign('vendor_customer_id')
-                ->references('id')
-                ->on('vendor_customers')
-                ->onDelete('cascade');
+            if (!Schema::hasColumn('shopping_cart_items', 'vendor_customer_id')) {
+                $table->unsignedBigInteger('vendor_customer_id')->nullable()->after('user_id');
+                
+                // Add foreign key constraint
+                $table->foreign('vendor_customer_id')
+                    ->references('id')
+                    ->on('vendor_customers')
+                    ->onDelete('cascade');
+            }
         });
     }
 
@@ -29,8 +31,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('shopping_cart_items', function (Blueprint $table) {
-            $table->dropForeign(['vendor_customer_id']);
-            $table->dropColumn('vendor_customer_id');
+            if (Schema::hasColumn('shopping_cart_items', 'vendor_customer_id')) {
+                $table->dropForeign(['vendor_customer_id']);
+                $table->dropColumn('vendor_customer_id');
+            }
         });
     }
 };

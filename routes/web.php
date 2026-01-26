@@ -214,8 +214,8 @@ Route::get('/css/dynamic.css', function () {
     return response($css, 200)->header('Content-Type', 'text/css');
 });
 
-// Admin Routes (protected by auth middleware)
-Route::middleware('auth')->group(function () {
+// Admin Routes (protected by admin middleware - only super_admin, admin, editor, staff can access)
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/admin/dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
     Route::get('/admin/color-palette', function () {
@@ -524,24 +524,12 @@ Route::middleware('auth')->group(function () {
     // Referral Management Routes (Admin Only)
     Route::prefix('admin')->middleware(['permission:viewAny_referral'])->group(function () {
         Route::get('/referrals', [ReferralController::class, 'index'])->name('admin.referrals.index');
-        Route::get('/referrals/export', [ReferralController::class, 'export'])->name('admin.referrals.export');
         Route::get('/referrals/create', [ReferralController::class, 'create'])->name('admin.referrals.create');
         Route::post('/referrals', [ReferralController::class, 'store'])->name('admin.referrals.store');
-        Route::get('/referrals/{referral}', [ReferralController::class, 'show'])->name('admin.referrals.show');
         Route::get('/referrals/{referral}/edit', [ReferralController::class, 'edit'])->name('admin.referrals.edit');
         Route::put('/referrals/{referral}', [ReferralController::class, 'update'])->name('admin.referrals.update');
         Route::delete('/referrals/{referral}', [ReferralController::class, 'destroy'])->name('admin.referrals.destroy');
-        
-        // Referral status and reward management
         Route::post('/referrals/{referral}/update-status', [ReferralController::class, 'updateStatus'])->name('admin.referrals.update-status');
-        Route::post('/referrals/{referral}/claim-reward', [ReferralController::class, 'claimReward'])->name('admin.referrals.claim-reward');
-        Route::post('/referrals/{referral}/claim-all-rewards', [ReferralController::class, 'claimAllRewards'])->name('admin.referrals.claim-all-rewards');
-        
-        // Referral settings
-        Route::post('/referrals-settings', [ReferralController::class, 'updateSettings'])->name('admin.referrals.settings');
-        
-        // Generate referral codes
-        Route::post('/referrals-generate-code', [ReferralController::class, 'generateCode'])->name('admin.referrals.generate-code');
     });
 
 });

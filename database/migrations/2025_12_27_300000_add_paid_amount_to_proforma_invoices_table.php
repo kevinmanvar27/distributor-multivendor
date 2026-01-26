@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->decimal('paid_amount', 10, 2)->default(0)->after('total_amount');
-            $table->enum('payment_status', ['unpaid', 'partial', 'paid'])->default('unpaid')->after('paid_amount');
+            if (!Schema::hasColumn('proforma_invoices', 'paid_amount')) {
+                $table->decimal('paid_amount', 10, 2)->default(0)->after('total_amount');
+            }
+            if (!Schema::hasColumn('proforma_invoices', 'payment_status')) {
+                $table->enum('payment_status', ['unpaid', 'partial', 'paid'])->default('unpaid')->after('paid_amount');
+            }
         });
     }
 
@@ -23,7 +27,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->dropColumn(['paid_amount', 'payment_status']);
+            $columns = [];
+            if (Schema::hasColumn('proforma_invoices', 'paid_amount')) {
+                $columns[] = 'paid_amount';
+            }
+            if (Schema::hasColumn('proforma_invoices', 'payment_status')) {
+                $columns[] = 'payment_status';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

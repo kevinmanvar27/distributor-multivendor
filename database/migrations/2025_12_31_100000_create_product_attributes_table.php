@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_attributes', function (Blueprint $table) {
-            $table->id();
-            $table->string('name'); // e.g., "Size", "Color", "Material"
-            $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->integer('sort_order')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('product_attributes')) {
+            Schema::create('product_attributes', function (Blueprint $table) {
+                $table->id();
+                $table->string('name'); // e.g., "Size", "Color", "Material"
+                $table->string('slug')->unique();
+                $table->text('description')->nullable();
+                $table->integer('sort_order')->default(0);
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

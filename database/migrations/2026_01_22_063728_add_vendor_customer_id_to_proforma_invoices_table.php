@@ -14,14 +14,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->unsignedBigInteger('vendor_customer_id')->nullable()->after('vendor_id');
-            
-            $table->foreign('vendor_customer_id')
-                ->references('id')
-                ->on('vendor_customers')
-                ->onDelete('set null');
-            
-            $table->index('vendor_customer_id');
+            if (!Schema::hasColumn('proforma_invoices', 'vendor_customer_id')) {
+                $table->unsignedBigInteger('vendor_customer_id')->nullable()->after('vendor_id');
+                
+                $table->foreign('vendor_customer_id')
+                    ->references('id')
+                    ->on('vendor_customers')
+                    ->onDelete('set null');
+                
+                $table->index('vendor_customer_id');
+            }
         });
     }
 
@@ -31,9 +33,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->dropForeign(['vendor_customer_id']);
-            $table->dropIndex(['vendor_customer_id']);
-            $table->dropColumn('vendor_customer_id');
+            if (Schema::hasColumn('proforma_invoices', 'vendor_customer_id')) {
+                $table->dropForeign(['vendor_customer_id']);
+                $table->dropIndex(['vendor_customer_id']);
+                $table->dropColumn('vendor_customer_id');
+            }
         });
     }
 };

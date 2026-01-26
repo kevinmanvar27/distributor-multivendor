@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            if (!Schema::hasColumn('proforma_invoices', 'vendor_id')) {
-                $table->unsignedBigInteger('vendor_id')->nullable()->after('user_id');
+        Schema::table('media', function (Blueprint $table) {
+            if (!Schema::hasColumn('media', 'vendor_id')) {
+                $table->unsignedBigInteger('vendor_id')->nullable()->after('size');
                 $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
-                $table->index('vendor_id');
             }
         });
     }
@@ -25,10 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            if (Schema::hasColumn('proforma_invoices', 'vendor_id')) {
+        Schema::table('media', function (Blueprint $table) {
+            if (Schema::hasColumn('media', 'vendor_id')) {
                 $table->dropForeign(['vendor_id']);
-                $table->dropIndex(['vendor_id']);
                 $table->dropColumn('vendor_id');
             }
         });

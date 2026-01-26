@@ -14,31 +14,73 @@ return new class extends Migration
         Schema::table('settings', function (Blueprint $table) {
             // Responsive Font Size Matrix
             // Desktop sizes
-            $table->integer('desktop_h1_size')->nullable()->default(36);
-            $table->integer('desktop_h2_size')->nullable()->default(30);
-            $table->integer('desktop_h3_size')->nullable()->default(24);
-            $table->integer('desktop_h4_size')->nullable()->default(20);
-            $table->integer('desktop_h5_size')->nullable()->default(18);
-            $table->integer('desktop_h6_size')->nullable()->default(16);
-            $table->integer('desktop_body_size')->nullable()->default(16);
+            if (!Schema::hasColumn('settings', 'desktop_h1_size')) {
+                $table->integer('desktop_h1_size')->nullable()->default(36);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_h2_size')) {
+                $table->integer('desktop_h2_size')->nullable()->default(30);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_h3_size')) {
+                $table->integer('desktop_h3_size')->nullable()->default(24);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_h4_size')) {
+                $table->integer('desktop_h4_size')->nullable()->default(20);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_h5_size')) {
+                $table->integer('desktop_h5_size')->nullable()->default(18);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_h6_size')) {
+                $table->integer('desktop_h6_size')->nullable()->default(16);
+            }
+            if (!Schema::hasColumn('settings', 'desktop_body_size')) {
+                $table->integer('desktop_body_size')->nullable()->default(16);
+            }
             
             // Tablet sizes
-            $table->integer('tablet_h1_size')->nullable()->default(32);
-            $table->integer('tablet_h2_size')->nullable()->default(28);
-            $table->integer('tablet_h3_size')->nullable()->default(22);
-            $table->integer('tablet_h4_size')->nullable()->default(18);
-            $table->integer('tablet_h5_size')->nullable()->default(16);
-            $table->integer('tablet_h6_size')->nullable()->default(14);
-            $table->integer('tablet_body_size')->nullable()->default(14);
+            if (!Schema::hasColumn('settings', 'tablet_h1_size')) {
+                $table->integer('tablet_h1_size')->nullable()->default(32);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_h2_size')) {
+                $table->integer('tablet_h2_size')->nullable()->default(28);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_h3_size')) {
+                $table->integer('tablet_h3_size')->nullable()->default(22);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_h4_size')) {
+                $table->integer('tablet_h4_size')->nullable()->default(18);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_h5_size')) {
+                $table->integer('tablet_h5_size')->nullable()->default(16);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_h6_size')) {
+                $table->integer('tablet_h6_size')->nullable()->default(14);
+            }
+            if (!Schema::hasColumn('settings', 'tablet_body_size')) {
+                $table->integer('tablet_body_size')->nullable()->default(14);
+            }
             
             // Mobile sizes
-            $table->integer('mobile_h1_size')->nullable()->default(28);
-            $table->integer('mobile_h2_size')->nullable()->default(24);
-            $table->integer('mobile_h3_size')->nullable()->default(20);
-            $table->integer('mobile_h4_size')->nullable()->default(16);
-            $table->integer('mobile_h5_size')->nullable()->default(14);
-            $table->integer('mobile_h6_size')->nullable()->default(12);
-            $table->integer('mobile_body_size')->nullable()->default(12);
+            if (!Schema::hasColumn('settings', 'mobile_h1_size')) {
+                $table->integer('mobile_h1_size')->nullable()->default(28);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_h2_size')) {
+                $table->integer('mobile_h2_size')->nullable()->default(24);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_h3_size')) {
+                $table->integer('mobile_h3_size')->nullable()->default(20);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_h4_size')) {
+                $table->integer('mobile_h4_size')->nullable()->default(16);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_h5_size')) {
+                $table->integer('mobile_h5_size')->nullable()->default(14);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_h6_size')) {
+                $table->integer('mobile_h6_size')->nullable()->default(12);
+            }
+            if (!Schema::hasColumn('settings', 'mobile_body_size')) {
+                $table->integer('mobile_body_size')->nullable()->default(12);
+            }
         });
     }
 
@@ -49,7 +91,7 @@ return new class extends Migration
     {
         Schema::table('settings', function (Blueprint $table) {
             // Remove Responsive Font Size Matrix fields
-            $table->dropColumn([
+            $columns = [
                 'desktop_h1_size',
                 'desktop_h2_size',
                 'desktop_h3_size',
@@ -71,7 +113,18 @@ return new class extends Migration
                 'mobile_h5_size',
                 'mobile_h6_size',
                 'mobile_body_size'
-            ]);
+            ];
+            
+            $existingColumns = [];
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('settings', $column)) {
+                    $existingColumns[] = $column;
+                }
+            }
+            
+            if (!empty($existingColumns)) {
+                $table->dropColumn($existingColumns);
+            }
         });
     }
 };

@@ -12,9 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->text('address')->nullable()->after('footer_text');
-            $table->string('gst_number')->nullable()->after('address');
-            $table->string('authorized_signatory')->nullable()->after('gst_number');
+            if (!Schema::hasColumn('settings', 'address')) {
+                $table->text('address')->nullable()->after('footer_text');
+            }
+            if (!Schema::hasColumn('settings', 'gst_number')) {
+                $table->string('gst_number')->nullable()->after('address');
+            }
+            if (!Schema::hasColumn('settings', 'authorized_signatory')) {
+                $table->string('authorized_signatory')->nullable()->after('gst_number');
+            }
         });
     }
 
@@ -24,7 +30,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn(['address', 'gst_number', 'authorized_signatory']);
+            $columns = [];
+            if (Schema::hasColumn('settings', 'address')) {
+                $columns[] = 'address';
+            }
+            if (Schema::hasColumn('settings', 'gst_number')) {
+                $columns[] = 'gst_number';
+            }
+            if (Schema::hasColumn('settings', 'authorized_signatory')) {
+                $columns[] = 'authorized_signatory';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

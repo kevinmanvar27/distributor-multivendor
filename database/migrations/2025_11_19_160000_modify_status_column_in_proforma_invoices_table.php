@@ -11,15 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->dropColumn('status');
-        });
-        
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->enum('status', ['Draft', 'Approved', 'Dispatch', 'Out for Delivery', 'Delivered', 'Return'])
-                  ->default('Draft')
-                  ->after('invoice_data');
-        });
+        // Only modify if status column exists and is tinyInteger type
+        if (Schema::hasColumn('proforma_invoices', 'status')) {
+            Schema::table('proforma_invoices', function (Blueprint $table) {
+                $table->dropColumn('status');
+            });
+            
+            Schema::table('proforma_invoices', function (Blueprint $table) {
+                $table->enum('status', ['Draft', 'Approved', 'Dispatch', 'Out for Delivery', 'Delivered', 'Return'])
+                      ->default('Draft')
+                      ->after('invoice_data');
+            });
+        } else {
+            Schema::table('proforma_invoices', function (Blueprint $table) {
+                $table->enum('status', ['Draft', 'Approved', 'Dispatch', 'Out for Delivery', 'Delivered', 'Return'])
+                      ->default('Draft')
+                      ->after('invoice_data');
+            });
+        }
     }
 
     /**
@@ -27,12 +36,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->dropColumn('status');
-        });
-        
-        Schema::table('proforma_invoices', function (Blueprint $table) {
-            $table->tinyInteger('status')->default(0)->after('invoice_data');
-        });
+        if (Schema::hasColumn('proforma_invoices', 'status')) {
+            Schema::table('proforma_invoices', function (Blueprint $table) {
+                $table->dropColumn('status');
+            });
+            
+            Schema::table('proforma_invoices', function (Blueprint $table) {
+                $table->tinyInteger('status')->default(0)->after('invoice_data');
+            });
+        }
     }
 };

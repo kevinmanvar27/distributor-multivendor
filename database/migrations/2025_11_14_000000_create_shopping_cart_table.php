@@ -11,21 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('shopping_cart_items', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('product_id');
-            $table->integer('quantity')->default(1);
-            $table->decimal('price', 10, 2); // Price at the time of adding to cart
-            $table->timestamps();
-            
-            // Foreign key constraints
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            
-            // Ensure a user can only have one entry per product
-            $table->unique(['user_id', 'product_id']);
-        });
+        if (!Schema::hasTable('shopping_cart_items')) {
+            Schema::create('shopping_cart_items', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('product_id');
+                $table->integer('quantity')->default(1);
+                $table->decimal('price', 10, 2); // Price at the time of adding to cart
+                $table->timestamps();
+                
+                // Foreign key constraints
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+                
+                // Ensure a user can only have one entry per product
+                $table->unique(['user_id', 'product_id']);
+            });
+        }
     }
 
     /**

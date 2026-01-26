@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sub_categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->unsignedBigInteger('category_id');
-            $table->unsignedBigInteger('image_id')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            
-            // Foreign key constraints
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
-            $table->foreign('image_id')->references('id')->on('media')->onDelete('set null');
-        });
+        if (!Schema::hasTable('sub_categories')) {
+            Schema::create('sub_categories', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->text('description')->nullable();
+                $table->unsignedBigInteger('category_id');
+                $table->unsignedBigInteger('image_id')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+                
+                // Foreign key constraints
+                $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+                $table->foreign('image_id')->references('id')->on('media')->onDelete('set null');
+            });
+        }
     }
 
     /**

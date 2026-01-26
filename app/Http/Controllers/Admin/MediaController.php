@@ -80,42 +80,50 @@ class MediaController extends Controller
         // Log request details for debugging
         Log::info('Media upload request received:', [
             'has_file' => $request->hasFile('file'),
-            'all_request_data' => $request->all(),
             'file_keys' => $request->files->keys(),
-            'content_type' => $request->header('Content-Type'),
-            'request_method' => $request->method(),
-            'request_uri' => $request->getRequestUri(),
-            'request_headers' => $request->headers->all(),
         ]);
         
         // Check if file exists in request
         if (!$request->hasFile('file')) {
-            Log::error('No file found in request', [
-                'files' => $request->files->all(),
-                'input' => $request->input(),
-                'all' => $request->all(),
-            ]);
-            return response()->json(['success' => false, 'error' => 'No file uploaded'], 400);
+            // Check if there was a file but it failed to upload
+            $file = $request->file('file');
+            if ($file) {
+                $errorCode = $file->getError();
+                $errorMessages = [
+                    UPLOAD_ERR_INI_SIZE => 'The file exceeds the maximum upload size (' . ini_get('upload_max_filesize') . '). Please upload a smaller file or contact administrator.',
+                    UPLOAD_ERR_FORM_SIZE => 'The file exceeds the maximum form size.',
+                    UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Server error: Missing temporary folder.',
+                    UPLOAD_ERR_CANT_WRITE => 'Server error: Failed to write file to disk.',
+                    UPLOAD_ERR_EXTENSION => 'Server error: A PHP extension stopped the file upload.',
+                ];
+                $errorMessage = $errorMessages[$errorCode] ?? 'Unknown upload error (code: ' . $errorCode . ')';
+                Log::error('File upload error: ' . $errorMessage, ['error_code' => $errorCode]);
+                return response()->json(['success' => false, 'error' => $errorMessage], 400);
+            }
+            
+            Log::error('No file found in request');
+            return response()->json(['success' => false, 'error' => 'No file uploaded. Please select a file.'], 400);
         }
         
         $file = $request->file('file');
         
-        // Log file details
-        Log::info('File details:', [
-            'is_valid' => $file->isValid(),
-            'path' => $file->path(),
-            'original_name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'error' => $file->getError(),
-        ]);
-        
         // Check if file is valid
         if (!$file->isValid()) {
-            Log::error('Invalid file upload', [
-                'error_code' => $file->getError(),
-                'error_message' => $file->getErrorMessage(),
-            ]);
-            return response()->json(['success' => false, 'error' => 'Invalid file: ' . $file->getErrorMessage()], 400);
+            $errorCode = $file->getError();
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'The file exceeds the maximum upload size (' . ini_get('upload_max_filesize') . '). Please upload a smaller file.',
+                UPLOAD_ERR_FORM_SIZE => 'The file exceeds the maximum form size.',
+                UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Server error: Missing temporary folder.',
+                UPLOAD_ERR_CANT_WRITE => 'Server error: Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION => 'Server error: A PHP extension stopped the file upload.',
+            ];
+            $errorMessage = $errorMessages[$errorCode] ?? $file->getErrorMessage();
+            Log::error('Invalid file upload', ['error_code' => $errorCode, 'error_message' => $errorMessage]);
+            return response()->json(['success' => false, 'error' => $errorMessage], 400);
         }
         
         $validator = Validator::make($request->all(), [
@@ -124,18 +132,7 @@ class MediaController extends Controller
         ]);
         
         if ($validator->fails()) {
-            // Log validation errors for debugging
-            Log::error('Media upload validation failed:', [
-                'errors' => $validator->errors()->toArray(),
-                'request_data' => $request->all(),
-                'file_info' => $request->file('file') ? [
-                    'original_name' => $request->file('file')->getClientOriginalName(),
-                    'mime_type' => $request->file('file')->getMimeType(),
-                    'size' => $request->file('file')->getSize(),
-                    'extension' => $request->file('file')->getClientOriginalExtension(),
-                ] : null,
-            ]);
-            
+            Log::error('Media upload validation failed:', $validator->errors()->toArray());
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
         
